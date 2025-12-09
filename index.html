@@ -362,6 +362,12 @@
       position: relative;
       overflow: hidden;
       cursor: pointer;
+      /* FORZAR LETRAS BLANCAS PARA MEJOR VISUALIZACION */
+      color: var(--text-primary); 
+    }
+
+    .choice-btn * { /* Aplicar también a sub-elementos para garantizar el contraste */
+        color: var(--text-primary) !important;
     }
 
     .choice-btn::before {
@@ -410,13 +416,14 @@
       font-size: 12px;
     }
 
+    /* Sobrescribir el color del texto del tag solo donde sea necesario */
     .effect-positive {
-      color: var(--success);
+      color: var(--success) !important;
       background: rgba(16, 185, 129, 0.1);
     }
 
     .effect-negative {
-      color: var(--danger);
+      color: var(--danger) !important;
       background: rgba(239, 68, 68, 0.1);
     }
 
@@ -642,6 +649,15 @@
 <body>
   <div class="particles" id="particles"></div>
 
+  <div id="notification-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title" style="color: var(--accent); margin-bottom: 15px;"></h3>
+            <p id="modal-message" style="color: var(--text-primary); margin-bottom: 20px;"></p>
+            <button class="primary" onclick="hideModal()">Aceptar</button>
+        </div>
+    </div>
+
+
   <div class="container">
     <header>
       <div class="logo">🛡️</div>
@@ -664,7 +680,7 @@
             <div class="area-card card" data-area="comercial" tabindex="0">
               <div class="area-icon">🏪</div>
               <h3>Comercial / Retail</h3>
-              <p style="color: var(--text-secondary);">Malls, supermercados y centros comerciales. Enfoque en atención al público, prevención de hurtos y emergencias.</p>
+              <p style="color: var(--text-secondary);">Mall, supermercados y centros comerciales. Enfoque en atención al público, prevención de hurtos y emergencias.</p>
             </div>
             <div class="area-card card" data-area="industrial" tabindex="0">
               <div class="area-icon">🏭</div>
@@ -679,17 +695,17 @@
             <div class="area-card card" data-area="salud" tabindex="0">
               <div class="area-icon">🏥</div>
               <h3>Salud / Hospitalario</h3>
-              <p style="color: var(--text-secondary);">Clínicas y hospitales. Enfoque en control de visitas, manejo de personas agresivas y seguridad de zonas sensibles.</p>
+              <p style="color: var(--text-secondary);">Clínicas, laboratorios  y hospitales. Enfoque en control de visitas, usuarios, manejo de personas agresivas y seguridad de zonas sensibles.</p>
             </div>
             <div class="area-card card" data-area="mineria" tabindex="0">
               <div class="area-icon">⛏️</div>
               <h3>Minería</h3>
-              <p style="color: var(--text-secondary);">Faenas y sitios de extracción remotos. Enfoque en seguridad perimetral, control de materiales de alto valor y respuesta a accidentes con maquinaria.</p>
+              <p style="color: var(--text-secondary);">Faenas y sitios de extracción remotos. Enfoque en seguridad perimetral, control de ingreso, materiales de alto valor y respuesta a accidentes con maquinaria.</p>
             </div>
             <div class="area-card card" data-area="energia" tabindex="0">
               <div class="area-icon">⚡</div>
               <h3>Energía</h3>
-              <p style="color: var(--text-secondary);">Subestaciones, plantas de poder e infraestructura crítica. Enfoque en prevención de sabotaje, control de acceso y manejo de derrames/fugas.</p>
+              <p style="color: var(--text-secondary);">Subestaciones, plantas de poder e infraestructura crítica. Enfoque en prevención de sabotaje, control de acceso y manejo de emergencias.</p>
             </div>
           </div>
 
@@ -847,6 +863,17 @@
       timerInterval: null,
       score: 0,
     };
+    
+    // --- Lógica del Modal de Notificación ---
+    function showModal(title, message) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-message').innerHTML = message;
+        document.getElementById('notification-modal').classList.add('active');
+    }
+
+    function hideModal() {
+        document.getElementById('notification-modal').classList.remove('active');
+    }
 
     // Funciones de utilidad de la interfaz
     function switchView(viewId) {
@@ -939,7 +966,7 @@
             card.dataset.scenarioId = scenario.id;
             card.setAttribute('tabindex', '0');
             
-            // La función startScenario ahora se llama desde el HTML generado
+            // CORREGIDO: El botón "Iniciar" debe llamar a startScenario con el ID correcto
             card.innerHTML = `
                 <div>
                     <h4>${scenario.title} <span class="difficulty-badge difficulty-${scenario.difficulty}">Dif. ${scenario.difficulty.charAt(0).toUpperCase() + scenario.difficulty.slice(1)}</span></h4>
@@ -1004,11 +1031,13 @@
                     const value = choice.effects[dim] || 0;
                     if (value !== 0) {
                         const type = value > 0 ? 'positive' : 'negative';
+                        // NOTA: El color del texto del tag se maneja en el CSS
                         return `<span class="effect-tag effect-${type}">${dim.toUpperCase()}: ${value > 0 ? '+' : ''}${value}</span>`;
                     }
                     return '';
                 }).join('');
 
+                // TODO EL TEXTO DEL choice-btn ES FORZADO A BLANCO EN EL CSS
                 choiceBtn.innerHTML = `
                     <div class="choice-title">${choice.desc}</div>
                     <div class="choice-effects">${effectsHtml}</div>
@@ -1090,7 +1119,7 @@
         switchView('view-report');
     }
 
-    // --- Inicialización ---
+    // --- Inicialización y Funcionalidad de Botones ---
     
     function init() {
         // 1. Adjuntar Listeners de Selección de Área
@@ -1100,7 +1129,7 @@
             });
         });
 
-        // 2. Botones de Navegación
+        // 2. Botones de Navegación y Control
         document.getElementById('btn-reset').addEventListener('click', () => {
             stopTimer();
             switchView('view-area');
@@ -1114,8 +1143,57 @@
                 switchView('view-area');
             }
         });
+
+        // 3. Funcionalidad de Botones de Control (Simulaciones)
+        document.getElementById('btn-tts').addEventListener('click', () => {
+            showModal('🔊 Módulo de Voz', 'Simulación: La funcionalidad de **Texto a Voz (TTS)** ha sido activada para la lectura de escenarios y alternativas. Desactivar para operar en silencio táctico.');
+        });
+
+        document.getElementById('btn-admin').addEventListener('click', () => {
+            const adminPanel = document.getElementById('admin-panel');
+            if (adminPanel.style.display === 'none') {
+                adminPanel.style.display = 'block';
+                showModal('⚙️ Panel de Administración', 'Acceso a la configuración. Se recomienda cautela al modificar los parámetros JSON.');
+            } else {
+                adminPanel.style.display = 'none';
+            }
+        });
         
-        // 3. Establecer vista inicial
+        document.getElementById('btn-save-session').addEventListener('click', () => {
+            showModal('💾 Guardar Sesión', 'Simulación: Su progreso actual ha sido guardado localmente bajo el nombre de **' + (document.getElementById('user-name').value || 'Usuario Anónimo') + '**.');
+        });
+
+        document.getElementById('btn-load-session').addEventListener('click', () => {
+            showModal('📂 Cargar Sesión', 'Simulación: Se ha cargado la sesión anterior (si existía). Revise sus métricas de dimensiones y el contador de sesiones.');
+        });
+
+        document.getElementById('btn-export-json').addEventListener('click', () => {
+            showModal('📥 Descargar Reporte', 'Simulación: El reporte final de su desempeño y el log de acciones ha sido exportado como **JSON/PDF** para análisis posterior (Inteligencia Post-Acción).');
+        });
+
+        document.getElementById('btn-print').addEventListener('click', () => {
+             showModal('🖨️ Imprimir Reporte', 'Simulación: Se ha generado una vista de impresión del **Reporte Final** para documentación oficial de capacitación.');
+        });
+
+        document.getElementById('btn-load-json').addEventListener('click', () => {
+            showModal('📤 Cargar JSON (Admin)', 'Simulación: JSON cargado. Los nuevos escenarios personalizados están disponibles en el área seleccionada.');
+        });
+
+        document.getElementById('btn-export-json-admin').addEventListener('click', () => {
+            showModal('📥 Exportar JSON (Admin)', 'Simulación: El JSON de escenarios cargado o editado ha sido exportado exitosamente.');
+        });
+        
+        document.getElementById('btn-random').addEventListener('click', () => {
+            if (!gameState.currentArea) {
+                showModal('⚠️ Alerta Táctica', 'Seleccione un **Área de Desempeño** primero para que el generador aleatorio pueda operar con criterios geográficos.');
+                return;
+            }
+            const scenarios = SCENARIOS[gameState.currentArea];
+            const randomIndex = Math.floor(Math.random() * scenarios.length);
+            startScenario(scenarios[randomIndex].id);
+        });
+
+        // 4. Establecer vista inicial
         switchView('view-area');
     }
 
