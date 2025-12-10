@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -55,8 +56,16 @@
     }
 
     @keyframes float {
-      0%, 100% { transform: translate(0, 0); opacity: 0; }
-      50% { opacity: 0.5; }
+
+      0%,
+      100% {
+        transform: translate(0, 0);
+        opacity: 0;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
     }
 
     .container {
@@ -149,6 +158,15 @@
       border-color: var(--accent);
     }
 
+    /* Estilo para botón de biometría activa */
+    button#btn-face-analysis.active {
+      background: var(--success);
+      color: var(--bg-primary);
+      box-shadow: 0 0 10px var(--success);
+      border: 1px solid var(--success);
+    }
+
+
     .card {
       background: linear-gradient(135deg, var(--bg-card) 0%, rgba(26, 31, 53, 0.8) 100%);
       border-radius: 16px;
@@ -203,7 +221,7 @@
       border-color: var(--accent);
       background: linear-gradient(135deg, rgba(0, 217, 255, 0.1) 0%, rgba(0, 128, 255, 0.05) 100%);
     }
-    
+
     .area-card:hover::before {
       transform: scaleX(1);
     }
@@ -238,7 +256,7 @@
     }
 
     .scenario-card:hover {
-        border-color: var(--accent);
+      border-color: var(--accent);
     }
 
     .scenario-card::before {
@@ -297,6 +315,36 @@
       border-left: 4px solid var(--accent);
     }
 
+    /* Estilos del Módulo Biometría */
+    .face-analysis-module {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .face-analysis-module video,
+    .face-analysis-module canvas {
+      width: 120px;
+      height: 90px;
+      background: var(--bg-secondary);
+      border: 2px solid var(--danger);
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+      transform: scaleX(-1);
+      /* Simular espejo */
+      transition: all 0.3s ease;
+    }
+
+    .face-analysis-module.active video,
+    .face-analysis-module.active canvas {
+      border-color: var(--success);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+    }
+
     .timer {
       display: flex;
       align-items: center;
@@ -316,8 +364,15 @@
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.6;
+      }
     }
 
     .node-content {
@@ -335,6 +390,7 @@
         opacity: 0;
         transform: translateY(20px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -363,11 +419,12 @@
       overflow: hidden;
       cursor: pointer;
       /* FORZAR LETRAS BLANCAS PARA MEJOR VISUALIZACION */
-      color: var(--text-primary); 
+      color: var(--text-primary);
     }
 
-    .choice-btn * { /* Aplicar también a sub-elementos para garantizar el contraste */
-        color: var(--text-primary) !important;
+    .choice-btn * {
+      /* Aplicar también a sub-elementos para garantizar el contraste */
+      color: var(--text-primary) !important;
     }
 
     .choice-btn::before {
@@ -437,8 +494,13 @@
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
     }
 
     .feedback-card.warning {
@@ -465,14 +527,16 @@
       border-radius: 8px;
       color: var(--text-primary);
       font-size: 14px;
-      margin-top: 10px; /* Added spacing for new fields */
+      margin-top: 10px;
+      /* Added spacing for new fields */
     }
 
     /* Override for first input */
     #user-name {
-        margin-top: 10px; /* To separate from h3 */
+      margin-top: 10px;
+      /* To separate from h3 */
     }
-    
+
     .user-input:focus {
       outline: none;
       border-color: var(--accent);
@@ -615,6 +679,7 @@
         opacity: 0;
         transform: translateY(-50px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -646,16 +711,17 @@
     }
   </style>
 </head>
+
 <body>
   <div class="particles" id="particles"></div>
 
   <div id="notification-modal" class="modal">
-        <div class="modal-content">
-            <h3 id="modal-title" style="color: var(--accent); margin-bottom: 15px;"></h3>
-            <p id="modal-message" style="color: var(--text-primary); margin-bottom: 20px;"></p>
-            <button class="primary" onclick="hideModal()">Aceptar</button>
-        </div>
+    <div class="modal-content">
+      <h3 id="modal-title" style="color: var(--accent); margin-bottom: 15px;"></h3>
+      <p id="modal-message" style="color: var(--text-primary); margin-bottom: 20px;"></p>
+      <button class="primary" onclick="hideModal()">Aceptar</button>
     </div>
+  </div>
 
 
   <div class="container">
@@ -666,6 +732,7 @@
         <div class="subtitle">Entrena decisiones críticas con escenarios realistas y feedback inmediato</div>
       </div>
       <div class="header-actions">
+        <button class="ghost" id="btn-face-analysis">👁️ Biometría Facial</button>
         <button class="ghost" id="btn-tts">🔊 Voz</button>
         <button class="ghost" id="btn-admin">⚙️ Admin</button>
         <button class="ghost" id="btn-reset">♻️ Reset</button>
@@ -680,32 +747,38 @@
             <div class="area-card card" data-area="comercial" tabindex="0">
               <div class="area-icon">🏪</div>
               <h3>Comercial / Retail</h3>
-              <p style="color: var(--text-secondary);">Mall, supermercados y centros comerciales. Enfoque en atención al público, prevención de hurtos y emergencias.</p>
+              <p style="color: var(--text-secondary);">Mall, supermercados y centros comerciales. Enfoque en atención al
+                público, prevención de hurtos y emergencias.</p>
             </div>
             <div class="area-card card" data-area="industrial" tabindex="0">
               <div class="area-icon">🏭</div>
               <h3>Industrial</h3>
-              <p style="color: var(--text-secondary);">Plantas industriales - seguridad de perímetro, maquinaria, riesgos químicos y emergencias laborales.</p>
+              <p style="color: var(--text-secondary);">Plantas industriales - seguridad de perímetro, maquinaria,
+                riesgos químicos y emergencias laborales.</p>
             </div>
             <div class="area-card card" data-area="servicio" tabindex="0">
               <div class="area-icon">🏢</div>
               <h3>Servicio / Corporativo</h3>
-              <p style="color: var(--text-secondary);">Edificios de oficinas, corporativos y de servicios. Enfoque en control de acceso, paquetes sospechosos y protección ejecutiva.</p>
+              <p style="color: var(--text-secondary);">Edificios de oficinas, corporativos y de servicios. Enfoque en
+                control de acceso, paquetes sospechosos y protección ejecutiva.</p>
             </div>
             <div class="area-card card" data-area="salud" tabindex="0">
               <div class="area-icon">🏥</div>
               <h3>Salud / Hospitalario</h3>
-              <p style="color: var(--text-secondary);">Clínicas, laboratorios  y hospitales. Enfoque en control de visitas, usuarios, manejo de personas agresivas y seguridad de zonas sensibles.</p>
+              <p style="color: var(--text-secondary);">Clínicas, laboratorios y hospitales. Enfoque en control de
+                visitas, usuarios, manejo de personas agresivas y seguridad de zonas sensibles.</p>
             </div>
             <div class="area-card card" data-area="mineria" tabindex="0">
               <div class="area-icon">⛏️</div>
               <h3>Minería</h3>
-              <p style="color: var(--text-secondary);">Faenas y sitios de extracción remotos. Enfoque en seguridad perimetral, control de ingreso, materiales de alto valor y respuesta a accidentes con maquinaria.</p>
+              <p style="color: var(--text-secondary);">Faenas y sitios de extracción remotos. Enfoque en seguridad
+                perimetral, control de ingreso, materiales de alto valor y respuesta a accidentes con maquinaria.</p>
             </div>
             <div class="area-card card" data-area="energia" tabindex="0">
               <div class="area-icon">⚡</div>
               <h3>Energía</h3>
-              <p style="color: var(--text-secondary);">Subestaciones, plantas de poder e infraestructura crítica. Enfoque en prevención de sabotaje, control de acceso y manejo de emergencias.</p>
+              <p style="color: var(--text-secondary);">Subestaciones, plantas de poder e infraestructura crítica.
+                Enfoque en prevención de sabotaje, control de acceso y manejo de emergencias.</p>
             </div>
           </div>
 
@@ -718,16 +791,34 @@
           </div>
         </div>
 
-        <div id="view-play" style="display: none;">
+        <div id="view-play" style="display: none; position: relative;">
+          <div id="face-analysis-module" class="face-analysis-module" style="display: none;">
+            <canvas id="face-canvas" style="position: absolute;"></canvas>
+            <video id="face-video" style="display: block;"></video>
+            <small id="face-status" style="margin-top: 5px; color: var(--text-secondary); font-size: 10px;"></small>
+          </div>
           <div class="card game-container">
             <div class="scenario-header">
               <div>
                 <h2 id="scenario-title">Título del Escenario</h2>
                 <div class="subtitle" id="scenario-meta">Meta info</div>
               </div>
-              <div class="timer" id="timer">
-                <span>⏱️</span>
-                <span id="timer-value">00:00</span>
+              <div class="timer-group" style="display: flex; gap: 15px; align-items: center;">
+                <div class="timer" id="timer">
+                  <span>⏱️</span>
+                  <span id="timer-value">00:00</span>
+                </div>
+
+                <div id="tension-meter"
+                  style="width: 150px; height: 40px; border: 1px solid var(--border); border-radius: 8px; padding: 5px; background: var(--bg-secondary); transition: all 0.3s ease;">
+                  <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 2px;">⚡ Tensión Operacional
+                  </div>
+                  <div class="progress-bar" style="height: 10px; margin-top: 0;">
+                    <div id="tension-fill" class="progress-fill"
+                      style="width: 0%; background: linear-gradient(90deg, var(--success) 0%, var(--warning) 50%, var(--danger) 100%);">
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -786,9 +877,10 @@
           <input type="text" class="user-input" id="user-name" placeholder="Ingresa tu Nombre">
           <input type="text" class="user-input" id="user-rut" placeholder="Ingresa tu RUT (Ej: 12.345.678-9)">
           <input type="text" class="user-input" id="user-facility" placeholder="Instalación/Sede">
-          
+
           <div style="margin-top: 20px;">
-            <div style="color: var(--text-secondary); font-size: 13px; margin-bottom: 10px;">Sesiones guardadas: <strong id="sessions-count" style="color: var(--accent);">0</strong></div>
+            <div style="color: var(--text-secondary); font-size: 13px; margin-bottom: 10px;">Sesiones guardadas:
+              <strong id="sessions-count" style="color: var(--accent);">0</strong></div>
             <div style="display: flex; gap: 10px;">
               <button class="ghost" id="btn-save-session" style="flex: 1;">💾 Guardar</button>
               <button class="ghost" id="btn-load-session" style="flex: 1;">📂 Cargar</button>
@@ -852,6 +944,10 @@
     const DIMENSIONS = ['procedural', 'security', 'comms', 'time', 'empathy'];
     const WEIGHTS = {procedural: 0.4, security: 0.3, comms: 0.15, time: 0.1, empathy: 0.05};
     
+    // Configuración de Reacción Táctica (en milisegundos)
+    const MAX_REACTION_TIME = 20000; // 20 segundos para vacilación
+    const MIN_REACTION_TIME = 3000;  // 3 segundos para impulsividad
+    
     // Estado del juego
     let gameState = {
       currentArea: null,
@@ -862,6 +958,9 @@
       startTime: null,
       timerInterval: null,
       score: 0,
+      tensionLevel: 0, 
+      nodeLoadTime: 0, 
+      faceAnalysisActive: false // NUEVO: Flag para la biometría
     };
     
     // --- Lógica del Modal de Notificación ---
@@ -928,6 +1027,87 @@
         document.getElementById('progress-bar').style.width = `${currentScore}%`;
     }
 
+    // Función para actualizar el medidor de tensión
+    function updateTensionDisplay() {
+        const maxTension = 100; // Máximo de 100% de tensión
+        let tension = Math.min(maxTension, Math.max(0, gameState.tensionLevel));
+
+        // La tensión se calcula sobre 100%
+        const percentage = (tension / maxTension) * 100;
+
+        const tensionFill = document.getElementById('tension-fill');
+        const tensionMeter = document.getElementById('tension-meter');
+        if (tensionFill) {
+            tensionFill.style.width = `${percentage}%`;
+            
+            // Efecto visual de alto riesgo si la tensión es > 70
+            if (tension > 70) {
+                tensionMeter.style.borderColor = 'var(--danger)';
+                tensionMeter.style.boxShadow = '0 0 15px rgba(239, 68, 68, 0.6)';
+            } else if (tension > 40) {
+                tensionMeter.style.borderColor = 'var(--warning)';
+                tensionMeter.style.boxShadow = 'none';
+            } else {
+                tensionMeter.style.borderColor = 'var(--border)';
+                tensionMeter.style.boxShadow = 'none';
+            }
+        }
+    }
+    
+    // Función para manejar la activación de la cámara y la simulación
+    async function toggleFaceAnalysis() {
+        const btn = document.getElementById('btn-face-analysis');
+        const module = document.getElementById('face-analysis-module');
+        const video = document.getElementById('face-video');
+        const status = document.getElementById('face-status');
+
+        if (!gameState.faceAnalysisActive) {
+            // Simulación de solicitud de permisos
+            try {
+                // Intentar obtener el stream (esto activará el cuadro de diálogo de permisos del navegador)
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                
+                video.srcObject = stream;
+                video.play();
+                
+                module.style.display = 'flex';
+                module.classList.add('active');
+                btn.classList.add('active');
+                btn.textContent = '👁️ Biometría ACTIVA';
+                status.textContent = 'Análisis de Tensión ON';
+                
+                gameState.faceAnalysisActive = true;
+                showModal('✅ Módulo de Biometría Activado', 'El sistema está leyendo sus **microexpresiones faciales**. Esto afectará directamente su puntuación de **Tensión Operacional** y **Procedimiento**.');
+
+            } catch (err) {
+                // Si el usuario niega o hay un error, simulamos la activación sin el video real
+                module.style.display = 'flex';
+                module.classList.add('active');
+                btn.classList.add('active');
+                btn.textContent = '👁️ Biometría (Simulada)';
+                status.textContent = 'ERROR: No Camera Access. Simulating...';
+                
+                gameState.faceAnalysisActive = true;
+                showModal('⚠️ Biometría Activada (Simulada)', 'El acceso a la cámara fue denegado o falló. La función de Biometría Facial se ha **activado en modo simulación** y afectará la evaluación final. **Su puntuación de Procedimiento/Seguridad tendrá más fluctuación.**');
+                
+                // Asegurarse de que no haya un stream real en caso de error
+                video.srcObject = null;
+            }
+        } else {
+            // Desactivar
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            module.style.display = 'none';
+            module.classList.remove('active');
+            btn.classList.remove('active');
+            btn.textContent = '👁️ Biometría Facial';
+            gameState.faceAnalysisActive = false;
+            showModal('❌ Módulo de Biometría Desactivado', 'El sistema ha dejado de leer las microexpresiones. Su puntaje de Tensión Operacional y Procedimiento será más estable.');
+        }
+    }
+
     function calculatePartialScore() {
         let totalWeightedScore = 0;
         let maxTheoreticalScore = 20; // Maximum ideal score in points (e.g., 20)
@@ -989,26 +1169,32 @@
         gameState.currentScenario = scenario;
         gameState.dimensions = {procedural: 0, security: 0, comms: 0, time: 0, empathy: 0};
         gameState.actions = [];
+        gameState.tensionLevel = 0; 
         
         // 2. Iniciar UI
         document.getElementById('scenario-title').textContent = scenario.title;
         document.getElementById('scenario-meta').textContent = `Área: ${scenario.area.toUpperCase()} | Dificultad: ${scenario.difficulty.toUpperCase()}`;
         updateDimensionsDisplay();
+        updateTensionDisplay(); 
         startTimer();
         
         // 3. Cambiar Vista y Cargar Nodo Inicial
         switchView('view-play');
         loadNode(scenario.start);
     }
-    
+
     function loadNode(nodeId) {
         const scenario = gameState.currentScenario;
         const node = scenario.nodes[nodeId];
-        gameState.currentNode = nodeId; // Actualizar el nodo actual
+        gameState.currentNode = nodeId; 
+        
+        // **NUEVO:** Registrar el tiempo de carga del nodo para calcular la reacción
+        gameState.nodeLoadTime = Date.now(); 
 
+        // Actualizar el nodo actual
         document.getElementById('node-text').textContent = node.text;
         document.getElementById('feedback-card').style.display = 'none'; // Esconder feedback al avanzar
-
+        
         const choicesDiv = document.getElementById('choices');
         choicesDiv.innerHTML = '';
 
@@ -1046,80 +1232,357 @@
             });
         }
     }
-    
+
+    function analyzeReactionTime() {
+        const reactionTimeMs = Date.now() - gameState.nodeLoadTime;
+        const reactionTimeSeconds = (reactionTimeMs / 1000).toFixed(2);
+        let timeScoreChange = 0;
+        let timeFeedback = '';
+
+        if (reactionTimeMs < MIN_REACTION_TIME) {
+            timeScoreChange = -5; // Penalización por impulsividad
+            timeFeedback = `<span style="color: var(--danger);">🛑 **Reacción Impulsiva (${reactionTimeSeconds}s):** Actuó demasiado rápido. Revise su fase de **Orientación** (OODA).</span>`;
+        } else if (reactionTimeMs > MAX_REACTION_TIME) {
+            timeScoreChange = -5; // Penalización por vacilación
+            timeFeedback = `<span style="color: var(--danger);">⏳ **Reacción Lenta (${reactionTimeSeconds}s):** Vacilación. Su fase de **Decisión** fue crítica.</span>`;
+        } else {
+            timeScoreChange = 5; // Bonificación por tiempo óptimo
+            timeFeedback = `<span style="color: var(--success);">⏱️ **Reacción Táctica (${reactionTimeSeconds}s):** Tiempo de respuesta óptimo (Decisivo).</span>`;
+        }
+        
+        // Aplicar el cambio de puntuación a la dimensión de tiempo
+        gameState.dimensions.time += timeScoreChange;
+        
+        return {reactionTime: reactionTimeMs, timeFeedback: timeFeedback};
+    }
+
     function takeChoice(choiceId) {
         const scenario = gameState.currentScenario;
         const choice = scenario.choices[choiceId];
+        
+        // 1. ANÁLISIS DEL TIEMPO DE REACCIÓN
+        const {reactionTime, timeFeedback} = analyzeReactionTime();
 
-        // Aplicar efectos
+        // 2. CÁLCULO DE TENSIÓN BASE
+        let tensionChange = 0;
+        
+        tensionChange += (choice.effects.security || 0) * -2; 
+        tensionChange += (choice.effects.empathy || 0) * -1.5; 
+        
+        tensionChange += (choice.effects.procedural || 0) * -1; 
+        tensionChange += (choice.effects.comms || 0) * -1; 
+        
+        // Nota: La tensión aumenta también por vacilación/impulsividad
+        if (reactionTime < MIN_REACTION_TIME || reactionTime > MAX_REACTION_TIME) {
+            tensionChange += 5; // 5 puntos de tensión por decisión no óptima en tiempo
+        }
+
+        // 3. MODIFICADOR DE TENSIÓN POR BIOMETRÍA FACIAL (NUEVA LÓGICA)
+        let bioFeedback = '';
+        if (gameState.faceAnalysisActive) {
+            // Generar una fluctuación aleatoria para simular la detección de micro-expresiones de estrés
+            // Random entre -3 y +3
+            const randomTensionModifier = Math.floor(Math.random() * 7) - 3; 
+            tensionChange += randomTensionModifier;
+            
+            if (randomTensionModifier > 0) {
+                 bioFeedback += `<br><span style="color: var(--danger);">👁️ **MICROEXPRESIÓN:** Detección de nerviosismo (+${randomTensionModifier} tensión).</span>`;
+            } else if (randomTensionModifier < 0) {
+                 bioFeedback += `<br><span style="color: var(--success);">👁️ **CONTROL EMOCIONAL:** Microexpresiones de calma (-${Math.abs(randomTensionModifier)} tensión).</span>`;
+            } else {
+                 bioFeedback += `<br><span style="color: var(--warning);">👁️ **NEUTRALIDAD:** Expresión facial estable.</span>`;
+            }
+        }
+        
+        // 4. Aplicar Tensión Final
+        gameState.tensionLevel = Math.min(100, Math.max(0, gameState.tensionLevel + tensionChange));
+        updateTensionDisplay();
+        
+        // 5. Penalización/Bonificación por Tensión al Momento de la Decisión
+        let tensionScoreModifier = 0;
+        if (gameState.faceAnalysisActive && gameState.tensionLevel > 80) {
+            tensionScoreModifier = -2; // Penalización por actuar bajo extremo estrés
+            bioFeedback += `<br><span style="color: var(--danger);">🚨 **FALLA POR ESTRÉS:** Tensión extrema (>80). Se penalizan 2pts. en **Procedimiento**.</span>`;
+            gameState.dimensions.procedural = Math.max(-20, gameState.dimensions.procedural + tensionScoreModifier);
+        }
+        
+        // 6. Aplicar efectos de la elección a dimensiones
         let totalEffect = 0;
-        let isBadChoice = false;
-
         DIMENSIONS.forEach(dim => {
             const effect = choice.effects[dim] || 0;
-            gameState.dimensions[dim] += effect;
+            // La dimensión 'time' ya fue modificada por analyzeReactionTime
+            // La dimensión 'procedural' ya fue modificada por tensionScoreModifier si aplica
+            if (dim !== 'time' && dim !== 'procedural') { 
+                gameState.dimensions[dim] += effect;
+            } else if (dim === 'procedural') {
+                 // Si es procedural, ya fue modificado por tensionScoreModifier. Sumamos el efecto base.
+                gameState.dimensions[dim] += effect;
+            }
             totalEffect += effect;
-            if (effect < 0) isBadChoice = true;
         });
 
-        // Log de acción
+        // Sumar la penalización por estrés al total de efectos para el log
+        totalEffect += tensionScoreModifier;
+
+
+        // 7. Log de acción
         gameState.actions.push({
             node: gameState.currentNode,
             choice: choice.desc,
             effects: choice.effects,
+            tensionModifier: tensionScoreModifier, // Registrar penalización por tensión
+            bioTensionChange: gameState.faceAnalysisActive ? (tensionChange - (choice.effects.security || 0) * -2 - (choice.effects.empathy || 0) * -1.5 - (choice.effects.procedural || 0) * -1 - (choice.effects.comms || 0) * -1 - (reactionTime < MIN_REACTION_TIME || reactionTime > MAX_REACTION_TIME ? 5 : 0)) : 0, // Registrar sólo la parte de microexpresiones
             timestamp: Date.now() - gameState.startTime,
-            scoreChange: totalEffect
+            scoreChange: totalEffect,
+            tension: gameState.tensionLevel, 
+            reactionTime: reactionTime // Registrar tiempo de reacción
         });
 
-        // Generar Feedback
+        // 8. Generar Feedback
         let feedback = `**Decisión:** ${choice.desc}<br>`;
+
         if (totalEffect > 0) {
-             feedback += `<span style="color: var(--success);">✅ ¡Elección Positiva! Has aplicado el protocolo o mostrado la actitud correcta.</span>`;
+            feedback += `<span style="color: var(--success);">✅ ¡Elección Positiva! Has aplicado el protocolo o mostrado la actitud correcta.</span>`;
         } else if (totalEffect < 0) {
-             feedback += `<span style="color: var(--danger);">❌ ¡Riesgo/Falla! Esta acción ha afectado negativamente el resultado.</span>`;
+             feedback += `<span style="color: var(--danger);">❌ ¡Elección Crítica! Esta acción viola el protocolo y/o aumenta significativamente el riesgo.</span>`;
         } else {
-             feedback += `<span style="color: var(--warning);">⚠️ Elección Neutral. Se tomó una acción, pero no resolvió el problema.</span>`;
+             feedback += `<span style="color: var(--warning);">⚠️ ¡Decisión Neutral! No afecta mayormente la situación. Pudiste haber actuado mejor.</span>`;
         }
 
-        // Actualizar Display
-        updateDimensionsDisplay();
-        
-        // Mostrar feedback
-        const feedbackCard = document.getElementById('feedback-card');
-        feedbackCard.className = `card feedback-card ${isBadChoice ? 'warning' : ''}`;
+        // Agregar feedback de tensión y tiempo
+        feedback += `<br>${timeFeedback}`;
+        feedback += bioFeedback; // Agregar feedback de biometría
+
+        // Mostrar impacto de tensión base
+        const baseTensionChange = tensionChange - (tensionScoreModifier + (gameState.actions[gameState.actions.length - 1].bioTensionChange || 0)); // Excluir modificadores de biometría y score
+        if (baseTensionChange > 10) {
+            feedback += `<br><span style="color: var(--danger);">⚡ **ALERTA DE ESTRÉS (Base):** Tu acción aumentó la tensión en ${Math.round(baseTensionChange)} puntos, elevando el riesgo operacional.</span>`;
+        } else if (baseTensionChange < -5) {
+            feedback += `<br><span style="color: var(--success);">🧘 **CONTROL TÁCTICO (Base):** Tu acción de protocolo/comunicación redujo la tensión en ${Math.round(baseTensionChange * -1)} puntos.</span>`;
+        }
+
         document.getElementById('immediate-feedback').innerHTML = feedback;
+        const feedbackCard = document.getElementById('feedback-card');
+        feedbackCard.classList.remove('warning');
+        if (totalEffect < 0 || tensionChange > 0 || reactionTime < MIN_REACTION_TIME || reactionTime > MAX_REACTION_TIME) {
+            feedbackCard.classList.add('warning');
+            feedbackCard.style.borderLeftColor = 'var(--danger)';
+        } else {
+             feedbackCard.style.borderLeftColor = 'var(--success)';
+        }
+        
         feedbackCard.style.display = 'block';
 
-        // Cargar siguiente nodo
-        loadNode(choice.to);
+        updateDimensionsDisplay();
+
+        // Cargar el siguiente nodo
+        if (choice.to) {
+            loadNode(choice.to);
+        } else {
+            // Error en la configuración del escenario
+            loadNode(scenario.nodes[gameState.currentNode].choices[choiceId].to);
+        }
     }
-    
-    function showReport(finalScore, finalText) {
-        // Lógica simplificada de reporte
+
+    function showReport(finalScore, endMessage) {
         document.getElementById('final-score').textContent = `${finalScore}%`;
-        document.getElementById('report-feedback').innerHTML = `**Resultado del Escenario:** ${finalText}`;
-        
+        document.querySelector('.report-header .subtitle').textContent = endMessage;
+
         // Dimensiones
-        const reportDim = document.getElementById('report-dimensions');
-        reportDim.innerHTML = DIMENSIONS.map(dim => {
-            return `<div class="dimension-item"><span class="dimension-label">${dim.toUpperCase()}</span><span class="dimension-value">${gameState.dimensions[dim]}</span></div>`;
+        const reportDimensions = document.getElementById('report-dimensions');
+        reportDimensions.innerHTML = DIMENSIONS.map(dim => {
+            const value = gameState.dimensions[dim];
+            const color = value >= 10 ? 'var(--success)' : value >= 0 ? 'var(--warning)' : 'var(--danger)';
+            const label = dim.charAt(0).toUpperCase() + dim.slice(1);
+            return `<div class="dimension-item">
+                        <span class="dimension-label">${label}</span>
+                        <span class="dimension-value" style="color: ${color};">${value}</span>
+                    </div>`;
         }).join('');
 
         // Acciones
         const reportActions = document.getElementById('report-actions');
         reportActions.innerHTML = gameState.actions.map(action => {
-             const time = (action.timestamp / 1000).toFixed(1);
-             const type = action.scoreChange > 0 ? 'success' : action.scoreChange < 0 ? 'danger' : 'warning';
-             return `<div class="action-item" style="border-left-color: var(--${type});">
-                        <p><strong>${action.choice}</strong> (Efecto: ${action.scoreChange > 0 ? '+' : ''}${action.scoreChange} pts)</p>
-                        <small style="color: var(--text-secondary);">Tiempo: ${time}s</small>
+            const time = (action.timestamp / 1000).toFixed(1);
+            const type = action.scoreChange > 0 ? 'success' : action.scoreChange < 0 ? 'danger' : 'warning';
+            let tensionInfo = '';
+            if (action.tension !== undefined) {
+                const tensionColor = action.tension > 70 ? 'var(--danger)' : action.tension > 40 ? 'var(--warning)' : 'var(--success)';
+                tensionInfo = ` | Tensión Final: <strong style="color: ${tensionColor}">${Math.round(action.tension)}</strong>`;
+            }
+
+            let reactionInfo = '';
+            if (action.reactionTime !== undefined) {
+                 const reactionTimeS = (action.reactionTime / 1000).toFixed(2);
+                 const reactionColor = action.reactionTime < MIN_REACTION_TIME || action.reactionTime > MAX_REACTION_TIME ? 'var(--danger)' : 'var(--success)';
+                 reactionInfo = ` | Reacción: <strong style="color: ${reactionColor}">${reactionTimeS}s</strong>`;
+            }
+            
+            let tensionPenalty = '';
+            if (action.tensionModifier && action.tensionModifier < 0) {
+                 tensionPenalty = ` <span style="color: var(--danger);">(Pérdida por Estrés: ${action.tensionModifier}pts)</span>`;
+            }
+            
+            let bioTension = '';
+            if (gameState.faceAnalysisActive && action.bioTensionChange !== 0) {
+                const bioColor = action.bioTensionChange > 0 ? 'var(--danger)' : 'var(--success)';
+                bioTension = ` | Microexpr.: <strong style="color: ${bioColor}">${action.bioTensionChange > 0 ? '+' : ''}${Math.round(action.bioTensionChange)}</strong>`;
+            }
+            
+            
+            return `<div class="action-item" style="border-left-color: var(--${type});">
+                        <p><strong>${action.choice}</strong> (Efecto: ${action.scoreChange > 0 ? '+' : ''}${action.scoreChange} pts${tensionPenalty})</p>
+                        <small style="color: var(--text-secondary);">Tiempo Total: ${time}s${reactionInfo}${bioTension}${tensionInfo} | Nodo: ${action.node}</small>
                     </div>`;
         }).join('');
+
+        // Retroalimentación (simplificada por ahora)
+        const reportFeedback = document.getElementById('report-feedback');
+        let overallFeedback = '';
+        const finalTension = gameState.actions.length > 0 ? gameState.actions[gameState.actions.length - 1].tension : 0;
+
+        if (finalScore >= 80) {
+             overallFeedback = `<p style="color: var(--success);">**Análisis de Élite:** Rendimiento excepcional. Protocolos seguidos con rigurosidad y excelente control de la situación (Tensión final: ${Math.round(finalTension)}). Su tiempo de reacción fue decisivo.</p>`;
+        } else if (finalScore >= 50) {
+             overallFeedback = `<p style="color: var(--warning);">**Análisis Estándar:** Desempeño aceptable, pero hubo momentos de riesgo táctico, vacilación o impulsividad (revisar tiempos de reacción). Revise las acciones con puntuación negativa.</p>`;
+        } else {
+             overallFeedback = `<p style="color: var(--danger);">**Análisis Crítico:** Falla operacional. Se requiere reentrenamiento. La falta de procedimiento, el alto nivel de tensión y la mala gestión del tiempo incrementaron el peligro.</p>`;
+        }
+        
+        if (gameState.faceAnalysisActive) {
+            overallFeedback += '<p style="margin-top: 15px; color: var(--accent);">**Módulo de Biometría Activo:** La fluctuación en su puntuación refleja su **falta de control emocional** en los momentos de alta presión. Entrene su calma bajo fuego.</p>';
+        }
+        
+        reportFeedback.innerHTML = overallFeedback;
         
         switchView('view-report');
     }
 
-    // --- Inicialización y Funcionalidad de Botones ---
+
+    // --- Inicialización y Funcionalidad de Botones --- 
+
+    // Funcionalidades de persistencia (Guardar/Cargar/Contador)
+    function saveSession() {
+        const userName = document.getElementById('user-name').value;
+        if (!userName) {
+            alert("Por favor, ingresa tu Nombre para guardar la sesión.");
+            return;
+        }
+
+        const sessionData = {
+            name: userName,
+            rut: document.getElementById('user-rut').value,
+            facility: document.getElementById('user-facility').value,
+            // Guardamos el estado actual, dimensiones y tensión
+            gameState: JSON.stringify({
+                currentScenarioId: gameState.currentScenario ? gameState.currentScenario.id : null,
+                currentNode: gameState.currentNode,
+                dimensions: gameState.dimensions,
+                tensionLevel: gameState.tensionLevel,
+                actions: gameState.actions,
+                faceAnalysisActive: gameState.faceAnalysisActive // Guardar estado de biometría
+            }) 
+        };
+
+        try {
+            // Usamos el nombre como clave de la sesión
+            localStorage.setItem(`scec_session_${userName}`, JSON.stringify(sessionData));
+            updateSessionCount();
+            showModal('💾 Sesión Guardada', `Sesión de **${userName}** guardada con éxito. Puedes recargar tu progreso cuando desees.`);
+        } catch (e) {
+            showModal('Error', 'Error al guardar la sesión. ¿Está tu navegador en modo privado?');
+        }
+    }
+
+    function loadSession() {
+        const userName = document.getElementById('user-name').value;
+        if (!userName) {
+            alert("Por favor, ingresa el Nombre de la sesión que quieres cargar.");
+            return;
+        }
+
+        const sessionKey = `scec_session_${userName}`;
+        const storedData = localStorage.getItem(sessionKey);
+
+        if (storedData) {
+            const sessionData = JSON.parse(storedData);
+            
+            // Cargar campos de usuario
+            document.getElementById('user-rut').value = sessionData.rut;
+            document.getElementById('user-facility').value = sessionData.facility;
+
+            try {
+                const loadedState = JSON.parse(sessionData.gameState);
+                
+                // Cargar estado de dimensiones y tensión
+                gameState.dimensions = loadedState.dimensions || {procedural: 0, security: 0, comms: 0, time: 0, empathy: 0};
+                gameState.tensionLevel = loadedState.tensionLevel || 0;
+                gameState.actions = loadedState.actions || [];
+                gameState.faceAnalysisActive = loadedState.faceAnalysisActive || false;
+                
+                updateDimensionsDisplay();
+                updateTensionDisplay();
+                
+                // Actualizar botón de biometría
+                const btn = document.getElementById('btn-face-analysis');
+                const module = document.getElementById('face-analysis-module');
+                if (gameState.faceAnalysisActive) {
+                    // Simular la activación visual sin obtener el stream real
+                    btn.classList.add('active');
+                    btn.textContent = '👁️ Biometría (Cargada)';
+                    module.style.display = 'flex';
+                    module.classList.add('active');
+                    document.getElementById('face-status').textContent = 'Análisis de Tensión ON (Cargado)';
+                } else {
+                    btn.classList.remove('active');
+                    btn.textContent = '👁️ Biometría Facial';
+                    module.style.display = 'none';
+                    module.classList.remove('active');
+                }
+                
+                
+                // Intentar reanudar el escenario si existe
+                if (loadedState.currentScenarioId) {
+                    const areaId = gameState.currentArea || SCENARIOS.comercial.find(s => s.id === loadedState.currentScenarioId)?.area || 'comercial';
+                    selectArea(areaId); // Asegurar que el área esté seleccionada para que exista currentScenario
+                    
+                    const scenario = SCENARIOS[areaId].find(s => s.id === loadedState.currentScenarioId);
+                    if (scenario) {
+                        // Reiniciar el escenario pero cargar el nodo guardado
+                        startScenario(scenario.id);
+                        loadNode(loadedState.currentNode);
+                        stopTimer(); // El tiempo debe ser reanudado por el usuario o manejado de forma más compleja. Por simplicidad, se detiene.
+                        showModal('📂 Sesión Cargada', `Progreso de sesión de **${userName}** cargado. Escenario reanudado en el nodo **${loadedState.currentNode}**.`);
+                        return;
+                    }
+                }
+                
+                showModal('📂 Sesión Cargada', `Datos de usuario y dimensiones cargados para **${userName}**. Inicia un nuevo escenario.`);
+
+            } catch (e) {
+                 console.error('El estado del juego guardado es inválido:', e);
+                 showModal('Error de Carga', 'El archivo de sesión no se pudo leer correctamente.');
+            }
+
+        } else {
+            showModal('Sesión No Encontrada', `No se encontró una sesión guardada para el nombre **${userName}**.`);
+        }
+    }
+
+    function updateSessionCount() {
+        const count = Object.keys(localStorage).filter(key => key.startsWith('scec_session_')).length;
+        document.getElementById('sessions-count').textContent = count;
+    }
+    
+    function startRandomScenario() {
+        if (!gameState.currentArea || !SCENARIOS[gameState.currentArea] || SCENARIOS[gameState.currentArea].length === 0) {
+            showModal('Error', 'Seleccione un **Área de Desempeño** primero para que el generador aleatorio pueda operar con criterios geográficos.');
+            return;
+        }
+        const scenarios = SCENARIOS[gameState.currentArea];
+        const randomIndex = Math.floor(Math.random() * scenarios.length);
+        startScenario(scenarios[randomIndex].id);
+    }
     
     function init() {
         // 1. Adjuntar Listeners de Selección de Área
@@ -1132,10 +1595,14 @@
         // 2. Botones de Navegación y Control
         document.getElementById('btn-reset').addEventListener('click', () => {
             stopTimer();
+            // Desactivar la cámara al resetear
+            if (gameState.faceAnalysisActive) {
+                toggleFaceAnalysis();
+            }
             switchView('view-area');
             document.getElementById('scenarios-container').style.display = 'none';
         });
-        
+
         document.getElementById('btn-replay').addEventListener('click', () => {
             if (gameState.currentScenario) {
                 startScenario(gameState.currentScenario.id);
@@ -1148,6 +1615,10 @@
         document.getElementById('btn-tts').addEventListener('click', () => {
             showModal('🔊 Módulo de Voz', 'Simulación: La funcionalidad de **Texto a Voz (TTS)** ha sido activada para la lectura de escenarios y alternativas. Desactivar para operar en silencio táctico.');
         });
+        
+        // **NUEVO:** Botón de Biometría
+        document.getElementById('btn-face-analysis').addEventListener('click', toggleFaceAnalysis);
+
 
         document.getElementById('btn-admin').addEventListener('click', () => {
             const adminPanel = document.getElementById('admin-panel');
@@ -1159,363 +1630,291 @@
             }
         });
         
-        document.getElementById('btn-save-session').addEventListener('click', () => {
-            showModal('💾 Guardar Sesión', 'Simulación: Su progreso actual ha sido guardado localmente bajo el nombre de **' + (document.getElementById('user-name').value || 'Usuario Anónimo') + '**.');
-        });
+        // 4. Funcionalidad de Guardar/Cargar/Aleatorio
+        document.getElementById('btn-save-session').addEventListener('click', saveSession);
+        document.getElementById('btn-load-session').addEventListener('click', loadSession);
+        document.getElementById('btn-random').addEventListener('click', startRandomScenario);
+        updateSessionCount(); // Contar sesiones guardadas al inicio
 
-        document.getElementById('btn-load-session').addEventListener('click', () => {
-            showModal('📂 Cargar Sesión', 'Simulación: Se ha cargado la sesión anterior (si existía). Revise sus métricas de dimensiones y el contador de sesiones.');
-        });
-
-        document.getElementById('btn-export-json').addEventListener('click', () => {
-            showModal('📥 Descargar Reporte', 'Simulación: El reporte final de su desempeño y el log de acciones ha sido exportado como **JSON/PDF** para análisis posterior (Inteligencia Post-Acción).');
-        });
-
-        document.getElementById('btn-print').addEventListener('click', () => {
-             showModal('🖨️ Imprimir Reporte', 'Simulación: Se ha generado una vista de impresión del **Reporte Final** para documentación oficial de capacitación.');
-        });
-
-        document.getElementById('btn-load-json').addEventListener('click', () => {
-            showModal('📤 Cargar JSON (Admin)', 'Simulación: JSON cargado. Los nuevos escenarios personalizados están disponibles en el área seleccionada.');
-        });
-
-        document.getElementById('btn-export-json-admin').addEventListener('click', () => {
-            showModal('📥 Exportar JSON (Admin)', 'Simulación: El JSON de escenarios cargado o editado ha sido exportado exitosamente.');
-        });
-        
-        document.getElementById('btn-random').addEventListener('click', () => {
-            if (!gameState.currentArea) {
-                showModal('⚠️ Alerta Táctica', 'Seleccione un **Área de Desempeño** primero para que el generador aleatorio pueda operar con criterios geográficos.');
-                return;
-            }
-            const scenarios = SCENARIOS[gameState.currentArea];
-            const randomIndex = Math.floor(Math.random() * scenarios.length);
-            startScenario(scenarios[randomIndex].id);
-        });
-
-        // 4. Establecer vista inicial
+        // 5. Establecer vista inicial
         switchView('view-area');
     }
-
+    
     window.onload = init;
   </script>
-  
   <script>
     // Escenarios de ejemplo (Mismos que en la respuesta anterior, funcionales y con 2+ casos por área)
     let SCENARIOS = {
-      "comercial": [
-        {
-          id: 'c_hurto_simple',
-          title: 'Hurto en pasillo',
-          area: 'comercial',
-          difficulty: 'facil',
-          est_time: 5,
-          start: 'n_start',
-          nodes: {
-            n_start: {type: 'info', text: 'Son las 15:30. Un cliente reporta que alguien metió artículos al abrigo. Se oyen murmullos en el pasillo.', choices: ['c_approach', 'c_call']},
-            n_approach: {type: 'event', text: 'Te acercas y ves a una persona con un producto sin pagar. Hay 2 testigos mirando la situación.', choices: ['c_confront', 'c_follow', 'c_await_backup']},
-            n_wait: {type: 'event', text: 'Pides apoyo y esperas 45 segundos. Llega personal de tienda para coordinar.', choices: ['c_coord', 'c_ignore']},
-            n_end_ok: {type: 'end', text: 'Detención pacífica completada. Se realiza reporte y el cliente respira tranquilo. Procedimiento correcto aplicado.'},
-            n_end_fail: {type: 'end', text: 'El sospechoso huye causando un empujón. Un cliente resulta lesionado. Habrá investigación interna.'}
-          },
-          choices: {
-            c_approach: {from: 'n_start', to: 'n_approach', effects: {procedural: 5, security: -5}, desc: 'Acercarse inmediatamente sin apoyo'},
-            c_call: {from: 'n_start', to: 'n_wait', effects: {procedural: 8, security: 10, comms: 15}, desc: 'Reportar situación y pedir backup'},
-            c_confront: {from: 'n_approach', to: 'n_end_fail', effects: {procedural: -10, security: -15, empathy: -5}, desc: 'Confrontar al sospechoso inmediatamente, sin esperar apoyo'},
-            c_follow: {from: 'n_approach', to: 'n_wait', effects: {procedural: 5, security: 5, time: -10}, desc: 'Seguir discretamente mientras pides apoyo'},
-            c_await_backup: {from: 'n_approach', to: 'n_wait', effects: {procedural: 10, security: 10}, desc: 'Mantener la distancia y esperar apoyo para el acercamiento'},
-            c_coord: {from: 'n_wait', to: 'n_end_ok', effects: {procedural: 15, security: 15, comms: 10, empathy: 5, time: 5}, desc: 'Coordinar con personal de tienda para un acercamiento conjunto y protocolar'},
-            c_ignore: {from: 'n_wait', to: 'n_end_fail', effects: {procedural: -15, security: -20}, desc: 'Decidir que no es un riesgo y dejar que se vaya, violando el protocolo'}
-          }
-        },
-        {
-          id: 'c_incendio_foodcourt',
-          title: 'Incendio en patio de comidas',
-          area: 'comercial',
-          difficulty: 'alto',
-          est_time: 8,
-          start: 'n_start',
-          nodes: {
-            n_start: {type: 'info', text: 'Alarma de incendio en el patio de comidas. Se ve humo denso saliendo de un local de comida rápida. Pánico leve.', choices: ['c_check', 'c_alarm', 'c_direct']},
-            n_check: {type: 'event', text: 'Te diriges al foco del humo. El fuego es pequeño pero se está propagando rápidamente en la campana extractora.', choices: ['c_extinguish', 'c_evac_zone']},
-            n_alarm: {type: 'event', text: 'Activas la alarma general y llamas a emergencia (bomberos/jefatura) desde el puesto central.', choices: ['c_evac_full', 'c_wait_firemen']},
-            n_end_ok: {type: 'end', text: 'Evacuación exitosa y contención del fuego inicial. Se minimizan los daños y no hay heridos. El procedimiento de emergencia funcionó.'},
-            n_end_fail: {type: 'end', text: 'El pánico aumenta, la evacuación es caótica. El fuego se propaga al techo. Graves daños materiales y posibles heridos.'}
-          },
-          choices: {
-            c_check: {from: 'n_start', to: 'n_check', effects: {time: -10, security: -5}, desc: 'Ir a ver la magnitud antes de actuar'},
-            c_alarm: {from: 'n_start', to: 'n_alarm', effects: {procedural: 10, comms: 15, time: 5}, desc: 'Activar alarma general y llamar a emergencias'},
-            c_direct: {from: 'n_start', to: 'n_end_fail', effects: {security: -10, comms: -10}, desc: 'Gritar órdenes de evacuación sin activar alarmas'},
-            c_extinguish: {from: 'n_check', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Intentar apagar el fuego solo con un extintor portátil'},
-            c_evac_zone: {from: 'n_check', to: 'n_alarm', effects: {procedural: 5, security: 10}, desc: 'Comenzar evacuación del área de riesgo inmediato'},
-            c_evac_full: {from: 'n_alarm', to: 'n_end_ok', effects: {procedural: 20, security: 20, comms: 10}, desc: 'Dirigir la evacuación completa y establecer perímetro de seguridad'},
-            c_wait_firemen: {from: 'n_alarm', to: 'n_end_fail', effects: {time: -15, security: -15}, desc: 'Esperar pasivamente la llegada de los bomberos'}
-          }
-        },
-        // ESCENARIO SOLICITADO: Contención de persona con trastornos psicológicos
-        {
-          id: 'c_crisis_psicologica',
-          title: 'Contención de Cliente en Crisis',
-          area: 'comercial',
-          difficulty: 'alto',
-          est_time: 8,
-          start: 'n_start',
-          nodes: {
-            n_start: {type: 'info', text: 'Un cliente en el área de cajas está gritando incoherencias, agitando los brazos y golpeando la cinta transportadora. El público se asusta y se aleja.', choices: ['c_intervene_distance', 'c_call_security_chief', 'c_physical_restraint']},
-            n_intervene_distance: {type: 'event', text: 'Te acercas con calma, manteniendo 3 metros de distancia, en posición no agresiva. El cliente te mira fijamente, pero no se mueve.', choices: ['c_talk_calmly', 'c_ask_what_happened', 'c_approach_closer']},
-            n_talk_calmly: {type: 'event', text: 'Usas una voz suave, repitiendo frases de desescalada y preguntando su nombre. Gana 10 segundos de su atención.', choices: ['c_offer_safe_area', 'c_call_paramedics']},
-            n_end_ok: {type: 'end', text: 'El cliente acepta ser acompañado a un área privada, donde el personal médico de emergencia se hace cargo. Evitaste la confrontación y protegiste al público. Excelente manejo de crisis.'},
-            n_end_fail_physical: {type: 'end', text: 'El intento de contención física causa una reacción violenta. El cliente y el guardia sufren heridas leves. Falla en el protocolo de desescalada.'},
-            n_end_fail_delay: {type: 'end', text: 'La demora o la falta de apoyo permiten que el cliente rompa una vitrina antes de ser contenido. Daño material y trauma a los testigos.'}
-          },
-          choices: {
-            c_intervene_distance: {from: 'n_start', to: 'n_intervene_distance', effects: {procedural: 10, security: 5, empathy: 5}, desc: 'Acercarse manteniendo la distancia de seguridad (buffer zone)'},
-            c_call_security_chief: {from: 'n_start', to: 'n_intervene_distance', effects: {procedural: 5, comms: 10, time: -10}, desc: 'Llamar a la central de inmediato y solicitar apoyo, luego acercarse'},
-            c_physical_restraint: {from: 'n_start', to: 'n_end_fail_physical', effects: {security: -15, empathy: -10}, desc: 'Intentar la contención física de inmediato sin desescalada'},
-            c_talk_calmly: {from: 'n_intervene_distance', to: 'n_talk_calmly', effects: {empathy: 15, comms: 10, procedural: 5}, desc: 'Usar lenguaje verbal y corporal de desescalada'},
-            c_ask_what_happened: {from: 'n_intervene_distance', to: 'n_end_fail_delay', effects: {empathy: -5, time: -5}, desc: 'Hacer preguntas abiertas sobre el problema (riesgo de aumentar la agitación)'},
-            c_approach_closer: {from: 'n_intervene_distance', to: 'n_end_fail_physical', effects: {security: -10}, desc: 'Acortar la distancia de seguridad sin una señal positiva'},
-            c_offer_safe_area: {from: 'n_talk_calmly', to: 'n_end_ok', effects: {procedural: 15, security: 10, empathy: 10, comms: 5, time: 5}, desc: 'Ofrecer acompañamiento a un lugar privado y seguro'},
-            c_call_paramedics: {from: 'n_talk_calmly', to: 'n_end_ok', effects: {procedural: 10, comms: 15, time: 10}, desc: 'Coordinar la llegada de ayuda médica especializada (ideal si hay desescalada inicial)'}
-          }
-        }
-      ],
-      "industrial": [
-        {
-          id: 'i_quimico_leak',
-          title: 'Fuga de Químico Leve',
-          area: 'industrial',
-          difficulty: 'medio',
-          est_time: 7,
-          start: 'n_start',
-          nodes: {
-            n_start: {type: 'info', text: 'Se detecta un olor fuerte y se observa una pequeña fuga en una válvula de un contenedor de químicos no vitales.', choices: ['c_isolate', 'c_check_alone', 'c_alarm_full']},
-            n_isolate: {type: 'event', text: 'Has aislado el área inmediata con cinta. Ahora debes decidir qué acción tomar sobre la fuga misma.', choices: ['c_try_contain', 'c_wait_hsm']},
-            n_alarm_full: {type: 'event', text: 'Activaste la alarma de emergencia y notificaste a HAZMAT. El equipo de respuesta está en camino.', choices: ['c_evac_zone', 'c_wait_in_place']},
-            n_end_ok: {type: 'end', text: 'La fuga fue contenida con éxito por el equipo HAZMAT sin riesgo para el personal. Procedimiento de respuesta de emergencia correcto.'},
-            n_end_fail: {type: 'end', text: 'La fuga escaló antes de la llegada del personal. Hubo una exposición leve y la producción se detuvo por horas.'}
-          },
-          choices: {
-            c_isolate: {from: 'n_start', to: 'n_isolate', effects: {procedural: 10, security: 5}, desc: 'Aislar el área inmediata y notificar al supervisor'},
-            c_check_alone: {from: 'n_start', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Acercarse para verificar la válvula sin EPP ni apoyo'},
-            c_alarm_full: {from: 'n_start', to: 'n_alarm_full', effects: {procedural: 15, comms: 10, time: 5}, desc: 'Activar alarma y llamar al equipo de respuesta a materiales peligrosos (HAZMAT)'},
-            c_try_contain: {from: 'n_isolate', to: 'n_end_fail', effects: {security: -10, time: -5}, desc: 'Intentar cerrar la válvula sin entrenamiento o EPP especializado'},
-            c_wait_hsm: {from: 'n_isolate', to: 'n_alarm_full', effects: {procedural: 5, time: 10}, desc: 'Mantener perímetro y esperar al equipo de Seguridad y Medio Ambiente (HSM)'},
-            c_evac_zone: {from: 'n_alarm_full', to: 'n_end_ok', effects: {procedural: 15, security: 15}, desc: 'Dirigir la evacuación segura del personal en la zona afectada'},
-            c_wait_in_place: {from: 'n_alarm_full', to: 'n_end_fail', effects: {time: -10, security: -5}, desc: 'Quedarse en el puesto de control esperando al equipo de respuesta'}
-          }
-        },
-        {
-          id: 'i_acceso_maquinaria',
-          title: 'Acceso No Autorizado a Bodega de Maquinaria',
-          area: 'industrial',
-          difficulty: 'facil',
-          est_time: 4,
-          start: 'n_start',
-          nodes: {
-            n_start: {type: 'info', text: 'Un contratista sin la autorización necesaria intenta acceder a la bodega de maquinaria pesada. Se ve frustrado y discute con el encargado de turno.', choices: ['c_check_auth', 'c_deny_entry_soft', 'c_ignore_dispute']},
-            n_check_auth: {type: 'event', text: 'Solicitas la documentación de acceso. El contratista tiene un permiso de otro día y se queja de un "error".', choices: ['c_call_super_ind', 'c_allow_entry']},
-            n_end_ok: {type: 'end', text: 'El problema se resuelve revisando la programación. Se aplica el protocolo de control de acceso correctamente, manteniendo buenas relaciones.'},
-            n_end_fail: {type: 'end', text: 'El contratista entra a la bodega y causa un daño menor a un equipo por desconocimiento de las normas internas.'}
-          },
-          choices: {
-            c_check_auth: {from: 'n_start', to: 'n_check_auth', effects: {procedural: 10, comms: 5}, desc: 'Intervenir y solicitar la documentación de acceso al contratista'},
-            c_deny_entry_soft: {from: 'n_start', to: 'n_end_ok', effects: {procedural: 5, empathy: 5}, desc: 'Negar la entrada inmediatamente pero con calma y sugiriendo la oficina de administración'},
-            c_ignore_dispute: {from: 'n_start', to: 'n_end_fail', effects: {security: -10, procedural: -5}, desc: 'Dejar que el encargado de turno resuelva la disputa sin tu intervención'},
-            c_call_super_ind: {from: 'n_check_auth', to: 'n_end_ok', effects: {procedural: 15, comms: 10}, desc: 'Llamar al supervisor de contrato o de seguridad para verificar el permiso'},
-            c_allow_entry: {from: 'n_check_auth', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Permitirle la entrada a pesar de la documentación incorrecta'}
-          }
-        }
-      ],
-      "servicio": [
-        {
-          id: 's_acceso_no_autorizado',
-          title: 'Acceso No Autorizado',
-          area: 'servicio',
-          difficulty: 'facil',
-          est_time: 4,
-          start: 'n_start',
-          nodes: {
-            n_start: {type: 'info', text: 'Una persona sin credencial intenta acceder a un piso restringido. Alega ser nuevo contratista.', choices: ['c_ask_id', 'c_deny_entry', 'c_ignore']},
-            n_ask_id: {type: 'event', text: 'Pides amablemente su identificación y un contacto de la empresa. El hombre se pone nervioso.', choices: ['c_call_super', 'c_insist_entry']},
-            n_end_ok: {type: 'end', text: 'El sospechoso es un ex-empleado con intenciones de hurto. Detenido por la policía. Procedimiento correcto y empático.'},
-            n_end_fail: {type: 'end', text: 'El individuo logra entrar al edificio. Hay reportes de robo en una oficina 5 minutos después.'}
-          },
-          choices: {
-            c_ask_id: {from: 'n_start', to: 'n_ask_id', effects: {procedural: 10, empathy: 5}, desc: 'Solicitar identificación y contacto de manera cortés'},
-            c_deny_entry: {from: 'n_start', to: 'n_end_fail', effects: {empathy: -10, comms: -5}, desc: 'Negar la entrada inmediatamente sin más preguntas'},
-            c_ignore: {from: 'n_start', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Asumir que es verdad y dejarlo pasar'},
-            c_call_super: {from: 'n_ask_id', to: 'n_end_ok', effects: {procedural: 15, security: 10, comms: 10}, desc: 'Llamar al supervisor para verificar la situación y pedir apoyo discreto'},
-            c_insist_entry: {from: 'n_ask_id', to: 'n_end_fail', effects: {security: -10, empathy: -5}, desc: 'Presionar al hombre a irse sin llamar a nadie'}
-          }
-        },
-        {
-          id: 's_paquete_sospechoso',
-          title: 'Descubrimiento de Paquete Sospechoso',
-          area: 'servicio',
-          difficulty: 'medio',
-          est_time: 6,
-          start: 'n_start',
-          nodes: {
-            n_start: {type: 'info', text: 'Un bolso olvidado en el lobby por más de 1 hora. Nadie lo reclama. No hay cámaras cerca.', choices: ['c_approach_check', 'c_isolate_call', 'c_announce']},
-            n_isolate_call: {type: 'event', text: 'Has establecido un perímetro de seguridad inicial y notificaste a tu central y a la policía.', choices: ['c_wait_expert', 'c_move_package']},
-            n_end_ok: {type: 'end', text: 'Paquete analizado y declarado seguro. El procedimiento de seguridad y la comunicación fueron perfectos. Minimizaste el riesgo.'},
-            n_end_fail: {type: 'end', text: 'El paquete contenía material pirotécnico inestable. Hubo una explosión menor y pánico entre los ocupantes.'}
-          },
-          choices: {
-            c_approach_check: {from: 'n_start', to: 'n_end_fail', effects: {security: -20, procedural: -15}, desc: 'Acercarse e inspeccionar el contenido del bolso'},
-            c_isolate_call: {from: 'n_start', to: 'n_isolate_call', effects: {procedural: 15, security: 15, comms: 10, time: 5}, desc: 'Establecer perímetro, no tocar y notificar inmediatamente a las autoridades'},
-            c_announce: {from: 'n_start', to: 'n_end_fail', effects: {empathy: -5, procedural: -5}, desc: 'Anunciar por altavoz sobre el bolso perdido (puede alertar al dueño si es malicioso)'},
-            c_wait_expert: {from: 'n_isolate_call', to: 'n_end_ok', effects: {procedural: 10, security: 10}, desc: 'Mantener el perímetro y esperar que el equipo experto se haga cargo'},
-            c_move_package: {from: 'n_isolate_call', to: 'n_end_fail', effects: {security: -25, procedural: -20}, desc: 'Mover el paquete a un lugar más seguro (por si acaso)'}
-          }
-        }
-      ],
-      "salud": [
-        {
-          id: 'h_agresion_medica',
-          title: 'Agresión en Sala de Espera',
-          area: 'salud',
-          difficulty: 'medio',
-          est_time: 5,
-          start: 'n_start',
-          nodes: {
-            n_start: {type: 'info', text: 'En la sala de espera de urgencias, un familiar enfurecido de un paciente comienza a gritar y empuja a una enfermera. Nadie interviene.', choices: ['c_intervene_solo', 'c_call_backup', 'c_use_force']},
-            n_call_backup: {type: 'event', text: 'Pides refuerzos por radio mientras mantienes contacto visual. El hombre se acerca a la enfermera de nuevo.', choices: ['c_verbal_calm', 'c_physical_block']},
-            n_end_ok: {type: 'end', text: 'El hombre es inmovilizado y calmado hasta la llegada de la policía. La enfermera está a salvo y no hay heridos. Aplicaste protocolos de desescalada.'},
-            n_end_fail: {type: 'end', text: 'La situación se sale de control. Otros pacientes y personal se involucran y resultan heridos. Daño a la reputación del centro.'}
-          },
-          choices: {
-            c_intervene_solo: {from: 'n_start', to: 'n_call_backup', effects: {security: -5, time: -5}, desc: 'Acercarse solo para interponerse físicamente sin apoyo'},
-            c_call_backup: {from: 'n_start', to: 'n_call_backup', effects: {procedural: 10, comms: 10, time: 5}, desc: 'Pedir refuerzos y mantener la distancia para evaluar la amenaza'},
-            c_use_force: {from: 'n_start', to: 'n_end_fail', effects: {security: -15, empathy: -15}, desc: 'Usar fuerza física de inmediato para someterlo'},
-            c_verbal_calm: {from: 'n_call_backup', to: 'n_end_ok', effects: {procedural: 15, empathy: 10, comms: 5}, desc: 'Utilizar técnicas de desescalada verbal, manteniendo la calma'},
-            c_physical_block: {from: 'n_call_backup', to: 'n_end_fail', effects: {security: -10, empathy: -5}, desc: 'Bloquear al hombre, iniciando el contacto físico antes de tener apoyo'}
-          }
-        },
-        {
-          id: 'h_paciente_fuga',
-          title: 'Fuga de Paciente Psiquiátrico',
-          area: 'salud',
-          difficulty: 'alto',
-          est_time: 7,
-          start: 'n_start',
-          nodes: {
-            n_start: {type: 'info', text: 'Un paciente de la unidad psiquiátrica logra salir de su área. El personal de enfermería te pide ayuda para recapturarlo.', choices: ['c_pursuit', 'c_isolate_and_call', 'c_ask_description']},
-            n_pursuit: {type: 'event', text: 'Lo encuentras en el jardín, agitado y asustado. No está agrediendo a nadie.', choices: ['c_calm_talk', 'c_try_catch']},
-            n_end_ok: {type: 'end', text: 'El paciente fue devuelto a la unidad sin incidentes, usando comunicación y contención mínima. Procedimiento basado en el cuidado.'},
-            n_end_fail: {type: 'end', text: 'El paciente se autolesiona o agrede al guardia durante la captura. Investigación interna en curso.'}
-          },
-          choices: {
-            c_pursuit: {from: 'n_start', to: 'n_pursuit', effects: {time: -5, procedural: 5}, desc: 'Iniciar la búsqueda inmediata por las áreas conocidas'},
-            c_isolate_and_call: {from: 'n_start', to: 'n_end_ok', effects: {procedural: 10, comms: 10, security: 10}, desc: 'Aislar las salidas, asegurar el perímetro y llamar a apoyo especializado del hospital'},
-            c_ask_description: {from: 'n_start', to: 'n_pursuit', effects: {procedural: 8}, desc: 'Recabar más detalles sobre el estado del paciente antes de la búsqueda'},
-            c_calm_talk: {from: 'n_pursuit', to: 'n_end_ok', effects: {empathy: 15, procedural: 10}, desc: 'Usar técnicas de comunicación para calmarlo y convencerlo de volver'},
-            c_try_catch: {from: 'n_pursuit', to: 'n_end_fail', effects: {security: -15, empathy: -10}, desc: 'Intentar la contención física sin técnicas de desescalada'}
-          }
-        }
-      ],
-      "mineria": [
-        {
-          id: 'm_intruso_perimetro',
-          title: 'Intrusión Perimetral - Área Restringida',
-          area: 'mineria',
-          difficulty: 'alto',
-          est_time: 10,
-          start: 'n_start',
-          nodes: {
-            n_start: {type: 'info', text: 'El CCTV muestra a una persona cortando la cerca del perímetro en una zona oscura cerca de la bodega de alto valor. Se activa la alarma silenciosa.', choices: ['c_send_patrol', 'c_monitor_only', 'c_call_police']},
-            n_send_patrol: {type: 'event', text: 'Envías una patrulla de dos guardias, sin saber si el intruso está armado. Deben acercarse con precaución.', choices: ['c_intercept', 'c_establish_overwatch']},
-            n_call_police: {type: 'event', text: 'Contactas a la policía y mantienes la vigilancia. El intruso comienza a moverse hacia la bodega.', choices: ['c_intercept_soft', 'c_wait_police']},
-            n_end_ok: {type: 'end', text: 'El intruso fue inmovilizado y entregado a las autoridades. Se evitó el robo y se mantuvo la seguridad del personal.'},
-            n_end_fail: {type: 'end', text: 'El intruso evade a los guardias o hiere a uno de ellos antes de huir con material valioso. Falla grave en el control de acceso.'}
-          },
-          choices: {
-            c_send_patrol: {from: 'n_start', to: 'n_send_patrol', effects: {time: -5, security: -5}, desc: 'Enviar patrulla a inspeccionar la zona de inmediato'},
-            c_monitor_only: {from: 'n_start', to: 'n_end_fail', effects: {security: -10, procedural: -10}, desc: 'Solo monitorear y esperar a ver qué hace'},
-            c_call_police: {from: 'n_start', to: 'n_call_police', effects: {procedural: 10, comms: 15}, desc: 'Notificar inmediatamente a la policía y a la central de operaciones'},
-            c_intercept: {from: 'n_send_patrol', to: 'n_end_fail', effects: {security: -15}, desc: 'Interceptar al intruso sin saber su armamento'},
-            c_establish_overwatch: {from: 'n_send_patrol', to: 'n_call_police', effects: {security: 10, procedural: 5}, desc: 'Establecer vigilancia discreta y esperar la llegada de la policía'},
-            c_intercept_soft: {from: 'n_call_police', to: 'n_end_fail', effects: {security: -10}, desc: 'Intentar disuadirlo verbalmente (riesgo si está armado)'},
-            c_wait_police: {from: 'n_call_police', to: 'n_end_ok', effects: {procedural: 15, security: 15, time: 5}, desc: 'Mantener la posición de vigilancia hasta la llegada de la fuerza pública'}
-          }
-        },
-        {
-          id: 'm_accidente_maquinaria',
-          title: 'Incidente con Maquinaria Pesada',
-          area: 'mineria',
-          difficulty: 'medio',
-          est_time: 8,
-          start: 'n_start',
-          nodes: {
-            n_start: {type: 'info', text: 'Se oye un fuerte golpe y se ve un camión minero volcado. El operador está atrapado, y hay derrame de fluidos.', choices: ['c_first_aid', 'c_isolate_power', 'c_call_rescue']},
-            n_isolate_power: {type: 'event', text: 'Aseguras que la energía del área y la maquinaria están desconectadas. El tiempo de respuesta es vital.', choices: ['c_start_extrication', 'c_wait_rescue']},
-            n_call_rescue: {type: 'event', text: 'Llamaste al equipo de rescate y a emergencias médicas. Ahora, ¿qué haces en el sitio?', choices: ['c_first_aid_wait', 'c_direct_traffic']},
-            n_end_ok: {type: 'end', text: 'El operador fue rescatado y estabilizado. El procedimiento de emergencia y aislamiento de riesgos fue ejecutado de manera óptima.'},
-            n_end_fail: {type: 'end', text: 'El derrame de fluidos causa un resbalón y un guardia resulta herido. El operador sufre lesiones graves debido a la demora en la ayuda especializada.'}
-          },
-          choices: {
-            c_first_aid: {from: 'n_start', to: 'n_end_fail', effects: {security: -10, time: -5}, desc: 'Intentar primeros auxilios sin asegurar la escena (riesgo de derrumbes/fluidos)'},
-            c_isolate_power: {from: 'n_start', to: 'n_isolate_power', effects: {procedural: 15, security: 10}, desc: 'Priorizar el aislamiento de riesgos (energía, fluidos) y luego llamar'},
-            c_call_rescue: {from: 'n_start', to: 'n_call_rescue', effects: {comms: 10, time: 5}, desc: 'Llamar al equipo de rescate y emergencias inmediatamente'},
-            c_start_extrication: {from: 'n_isolate_power', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Intentar sacar al operador sin el equipo de rescate especializado'},
-            c_wait_rescue: {from: 'n_isolate_power', to: 'n_end_ok', effects: {procedural: 10, security: 5, time: 10}, desc: 'Mantener la seguridad de la escena y esperar al equipo especializado'},
-            c_first_aid_wait: {from: 'n_call_rescue', to: 'n_end_ok', effects: {empathy: 5, procedural: 5}, desc: 'Proporcionar soporte básico (primeros auxilios) mientras llega la ayuda'},
-            c_direct_traffic: {from: 'n_call_rescue', to: 'n_end_fail', effects: {security: -10}, desc: 'Olvidarse del operador y dedicarse a controlar el tráfico de la zona'}
-          }
-        }
-      ],
-      "energia": [
-        {
-          id: 'e_vandalismo_subestacion',
-          title: 'Vandalismo en Subestación Remota',
-          area: 'energia',
-          difficulty: 'alto',
-          est_time: 9,
-          start: 'n_start',
-          nodes: {
-            n_start: {type: 'info', text: 'Alarma de intrusión en una subestación eléctrica remota. Se ven dos figuras intentando dañar un transformador vital.', choices: ['c_approach_fast', 'c_call_police_first', 'c_activate_siren']},
-            n_call_police_first: {type: 'event', text: 'Has llamado a la policía y a la jefatura. Se te indica monitorear desde una distancia segura.', choices: ['c_warn_loud', 'c_wait_silent']},
-            n_activate_siren: {type: 'event', text: 'Activas la alarma audible y luces de la subestación. Los intrusos se asustan y comienzan a correr.', choices: ['c_pursuit_vehicle', 'c_secure_damage']},
-            n_end_ok: {type: 'end', text: 'Los sospechosos fueron disuadidos por la alarma y la policía los interceptó en el perímetro. Se evitó un corte de energía mayor.'},
-            n_end_fail: {type: 'end', text: 'Los intrusos cortan un cable y causan un arco eléctrico, dejándote sin comunicación y exponiendo tu posición.'}
-          },
-          choices: {
-            c_approach_fast: {from: 'n_start', to: 'n_end_fail', effects: {security: -20, procedural: -15}, desc: 'Acercarse rápidamente y solo para confrontar la amenaza eléctrica y de seguridad'},
-            c_call_police_first: {from: 'n_start', to: 'n_call_police_first', effects: {procedural: 15, comms: 10, time: 5}, desc: 'Notificar de inmediato a la policía y central (procedimiento crítico)'},
-            c_activate_siren: {from: 'n_start', to: 'n_activate_siren', effects: {security: 5, time: 10}, desc: 'Activar sirena y luces de advertencia para disuadir a los intrusos'},
-            c_warn_loud: {from: 'n_call_police_first', to: 'n_activate_siren', effects: {time: -5}, desc: 'Usar altavoz para advertir su presencia (puede ser contraproducente)'},
-            c_wait_silent: {from: 'n_call_police_first', to: 'n_end_ok', effects: {procedural: 10, security: 10}, desc: 'Mantener la vigilancia encubierta hasta la llegada de la fuerza pública'},
-            c_pursuit_vehicle: {from: 'n_activate_siren', to: 'n_end_fail', effects: {security: -10, time: -10}, desc: 'Perseguir a los intrusos en vehículo sin esperar refuerzos'},
-            c_secure_damage: {from: 'n_activate_siren', to: 'n_end_ok', effects: {procedural: 5, security: 5}, desc: 'Verificar daños desde la distancia y asegurar el área inmediata'}
-          }
-        },
-        {
-          id: 'e_fuga_combustible',
-          title: 'Derrame de Combustible',
-          area: 'energia',
-          difficulty: 'medio',
-          est_time: 7,
-          start: 'n_start',
-          nodes: {
-            n_start: {type: 'info', text: 'Durante una ronda, se detecta un fuerte olor a combustible y se ve un charco creciendo cerca de un generador auxiliar. Alto riesgo de incendio.', choices: ['c_stop_leak_solo', 'c_fire_protocol', 'c_notify_hsm']},
-            n_fire_protocol: {type: 'event', text: 'Has activado la alarma de incendio/fuga. El personal no esencial está evacuando.', choices: ['c_use_absorbent', 'c_wait_firemen']},
-            n_notify_hsm: {type: 'event', text: 'Notificaste a la central y al equipo de Seguridad, Salud y Medio Ambiente (SSMA). Están en camino con barreras de contención.', choices: ['c_isolate_source', 'c_evac_zone']},
-            n_end_ok: {type: 'end', text: 'La fuga fue controlada y el combustible contenido. Se evitó una explosión y el impacto ambiental fue mínimo. Protocolo SSMA aplicado con éxito.'},
-            n_end_fail: {type: 'end', text: 'Un vapor del combustible entra en contacto con una chispa. Hay una pequeña explosión que hiere a personal y detiene la planta.'}
-          },
-          choices: {
-            c_stop_leak_solo: {from: 'n_start', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Intentar detener la fuga con herramientas a mano sin equipo de protección ni apoyo'},
-            c_fire_protocol: {from: 'n_start', to: 'n_fire_protocol', effects: {procedural: 10, comms: 5}, desc: 'Activar el protocolo de emergencia (alarma, evacuación) y llamar a bomberos'},
-            c_notify_hsm: {from: 'n_start', to: 'n_notify_hsm', effects: {procedural: 15, security: 10, time: 5}, desc: 'Notificar al equipo SSMA y pedir equipo de contención (opción más segura)'},
-            c_use_absorbent: {from: 'n_fire_protocol', to: 'n_end_fail', effects: {time: -10, security: -5}, desc: 'Intentar usar material absorbente por tu cuenta sin equipo SSMA'},
-            c_wait_firemen: {from: 'n_fire_protocol', to: 'n_notify_hsm', effects: {procedural: 5, time: 10}, desc: 'Asegurar el perímetro y esperar que el personal SSMA/bomberos tomen el control'},
-            c_isolate_source: {from: 'n_notify_hsm', to: 'n_end_fail', effects: {security: -10, procedural: -5}, desc: 'Intentar mover el contenedor o cerrar la llave sin equipo adecuado'},
-            c_evac_zone: {from: 'n_notify_hsm', to: 'n_end_ok', effects: {procedural: 10, security: 10}, desc: 'Asegurar la evacuación total del personal en la zona de riesgo'}
-          }
-        }
-      ]
+        "comercial": [
+            {
+                id: 'c_hurto_simple',
+                title: 'Hurto en pasillo',
+                area: 'comercial',
+                difficulty: 'facil',
+                est_time: 5,
+                start: 'n_start',
+                nodes: {
+                    n_start: {type: 'info', text: 'Son las 15:30. Un cliente reporta que alguien metió artículos al abrigo. Se oyen murmullos en el pasillo.', choices: ['c_approach', 'c_call']},
+                    n_approach: {type: 'event', text: 'Te acercas y ves a una persona con un producto sin pagar. Hay 2 testigos mirando la situación.', choices: ['c_confront', 'c_follow', 'c_await_backup']},
+                    n_wait: {type: 'event', text: 'Pides apoyo y esperas 45 segundos. Llega personal de tienda para coordinar.', choices: ['c_coord', 'c_ignore']},
+                    n_end_ok: {type: 'end', text: 'Detención pacífica completada. Se realiza reporte y el cliente respira tranquilo. Procedimiento correcto aplicado.'},
+                    n_end_fail: {type: 'end', text: 'El sospechoso huye causando un empujón. Un cliente resulta lesionado. Habrá investigación interna.'}
+                },
+                choices: {
+                    c_approach: {from: 'n_start', to: 'n_approach', effects: {security: -5, time: -5}, desc: 'Acercarse inmediatamente a inspeccionar'},
+                    c_call: {from: 'n_start', to: 'n_wait', effects: {procedural: 5, comms: 5, time: 5}, desc: 'Llamar a la central para pedir apoyo y coordinación'},
+                    c_confront: {from: 'n_approach', to: 'n_end_fail', effects: {security: -10, empathy: -10}, desc: 'Confrontar al sospechoso verbalmente de forma agresiva'},
+                    c_follow: {from: 'n_approach', to: 'n_end_fail', effects: {time: -10, procedural: -5}, desc: 'Seguir discretamente sin confrontar (pérdida de control)'},
+                    c_await_backup: {from: 'n_approach', to: 'n_wait', effects: {procedural: 10, time: 10}, desc: 'Mantener la distancia y esperar apoyo para intervenir'},
+                    c_coord: {from: 'n_wait', to: 'n_end_ok', effects: {procedural: 15, security: 10, comms: 10}, desc: 'Coordinar la acción con el personal de tienda y proceder'},
+                    c_ignore: {from: 'n_wait', to: 'n_end_fail', effects: {procedural: -10, security: -5}, desc: 'Dejar que el personal de tienda se encargue solo'}
+                }
+            },
+            {
+                id: 'c_incendio_falso',
+                title: 'Alarma de Incendio en Patio de Comidas',
+                area: 'comercial',
+                difficulty: 'medio',
+                est_time: 7,
+                start: 'n_start',
+                nodes: {
+                    n_start: {type: 'info', text: 'Recibes alerta de incendio en el patio de comidas. Se ve humo denso saliendo de un local de comida rápida. Pánico leve.', choices: ['c_check', 'c_alarm', 'c_direct']},
+                    n_check: {type: 'event', text: 'Te diriges al foco del humo. El fuego es pequeño pero se está propagando rápidamente en la campana extractora.', choices: ['c_extinguish', 'c_evac_zone']},
+                    n_alarm: {type: 'event', text: 'Activas la alarma general y llamas a emergencia (bomberos/jefatura) desde el puesto central.', choices: ['c_evac_full', 'c_wait_firemen']},
+                    n_end_ok: {type: 'end', text: 'Evacuación exitosa y contención del fuego inicial. Se minimizan los daños y no hay heridos. El procedimiento de emergencia funcionó.'},
+                    n_end_fail: {type: 'end', text: 'El pánico aumenta, la evacuación es caótica. El fuego se propaga al techo. Graves daños materiales y posibles heridos.'}
+                },
+                choices: {
+                    c_check: {from: 'n_start', to: 'n_check', effects: {time: -10, security: -5}, desc: 'Ir a ver la magnitud antes de actuar'},
+                    c_alarm: {from: 'n_start', to: 'n_alarm', effects: {procedural: 10, comms: 15, time: 5}, desc: 'Activar alarma general y llamar a emergencias'},
+                    c_direct: {from: 'n_start', to: 'n_end_fail', effects: {security: -10, comms: -10}, desc: 'Gritar órdenes de evacuación sin activar alarmas'},
+                    c_extinguish: {from: 'n_check', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Intentar apagar el fuego solo con un extintor de mano'},
+                    c_evac_zone: {from: 'n_check', to: 'n_alarm', effects: {time: -5, procedural: 5}, desc: 'Evacuar la zona inmediata antes de llamar'},
+                    c_evac_full: {from: 'n_alarm', to: 'n_end_ok', effects: {procedural: 10, security: 5}, desc: 'Coordinar la evacuación total y calmar a los clientes'},
+                    c_wait_firemen: {from: 'n_alarm', to: 'n_end_ok', effects: {procedural: 5, security: 5}, desc: 'Asegurar accesos y esperar la llegada de bomberos'}
+                }
+            }
+        ],
+        "industrial": [
+            {
+                id: 'i_fuga_quimica',
+                title: 'Fuga de Químico Industrial (Nivel 2)',
+                area: 'industrial',
+                difficulty: 'alto',
+                est_time: 10,
+                start: 'n_start',
+                nodes: {
+                    n_start: {type: 'info', text: 'Se activa una alarma en el sector de almacenamiento. Al llegar, se detecta una fuga lenta de un químico corrosivo (etiqueta AMARILLA).', choices: ['c_isolate', 'c_check_alone', 'c_alarm_full']},
+                    n_isolate: {type: 'event', text: 'Aislas el área con barreras temporales. El olor es perceptible y podría ser peligroso.', choices: ['c_try_contain', 'c_wait_hsm']},
+                    n_alarm_full: {type: 'event', text: 'Activaste la alarma de emergencia y notificaste a HAZMAT. El equipo de respuesta está en camino.', choices: ['c_evac_zone', 'c_wait_in_place']},
+                    n_end_ok: {type: 'end', text: 'La fuga fue contenida con éxito por el equipo HAZMAT sin riesgo para el personal. Procedimiento de respuesta de emergencia correcto.'},
+                    n_end_fail: {type: 'end', text: 'La fuga escaló antes de la llegada del personal. Hubo una exposición leve y la producción se detuvo por horas.'}
+                },
+                choices: {
+                    c_isolate: {from: 'n_start', to: 'n_isolate', effects: {procedural: 10, security: 5, time: 5}, desc: 'Aislar el área inmediata y notificar al supervisor'},
+                    c_check_alone: {from: 'n_start', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Acercarse para verificar la válvula sin EPP ni apoyo'},
+                    c_alarm_full: {from: 'n_start', to: 'n_alarm_full', effects: {procedural: 15, comms: 10, time: 5}, desc: 'Activar alarma y llamar al equipo de respuesta a materiales peligrosos (HAZMAT)'},
+                    c_try_contain: {from: 'n_isolate', to: 'n_end_fail', effects: {security: -10, time: -5}, desc: 'Intentar cerrar la válvula sin entrenamiento o EPP especializado'},
+                    c_wait_hsm: {from: 'n_isolate', to: 'n_alarm_full', effects: {procedural: 5, time: 10}, desc: 'Mantener perímetro y esperar al equipo de Seguridad y Medio Ambiente (HSM)'},
+                    c_evac_zone: {from: 'n_alarm_full', to: 'n_end_ok', effects: {procedural: 10, security: 5}, desc: 'Supervisar la evacuación de la zona de riesgo'},
+                    c_wait_in_place: {from: 'n_alarm_full', to: 'n_end_fail', effects: {time: -10, procedural: -5}, desc: 'Quedarse en el puesto de control esperando al equipo de respuesta'}
+                }
+            },
+            {
+                id: 'i_accidente_maquina',
+                title: 'Accidente con Maquinaria Pesada',
+                area: 'industrial',
+                difficulty: 'medio',
+                est_time: 8,
+                start: 'n_start',
+                nodes: {
+                    n_start: {type: 'info', text: 'Un operador de montacargas ha chocado con una estantería. El operador está atrapado y una pequeña fuga de aceite es visible.', choices: ['c_first_aid', 'c_isolate_power', 'c_call_rescue']},
+                    n_isolate_power: {type: 'event', text: 'Aseguras la zona cortando la energía y señalizando el área. El operador pide ayuda.', choices: ['c_start_extrication', 'c_wait_rescue']},
+                    n_call_rescue: {type: 'event', text: 'Llamas al equipo de emergencia interno. Llegan en 5 minutos.', choices: ['c_first_aid_wait', 'c_direct_traffic']},
+                    n_end_ok: {type: 'end', text: 'El operador fue rescatado con heridas leves. La prioridad de seguridad de la escena fue crítica para el éxito.'},
+                    n_end_fail: {type: 'end', text: 'El operador sufrió más daños por un rescate improvisado o por una falla secundaria (ej. incendio menor).'
+                    }
+                },
+                choices: {
+                    c_first_aid: {from: 'n_start', to: 'n_end_fail', effects: {security: -10, time: -5}, desc: 'Intentar primeros auxilios sin asegurar la escena (riesgo de derrumbes/fluidos)'},
+                    c_isolate_power: {from: 'n_start', to: 'n_isolate_power', effects: {procedural: 15, security: 10, time: 5}, desc: 'Priorizar el aislamiento de riesgos (energía, fluidos) y luego llamar'},
+                    c_call_rescue: {from: 'n_start', to: 'n_call_rescue', effects: {comms: 10, time: 5}, desc: 'Llamar al equipo de rescate y emergencias inmediatamente'},
+                    c_start_extrication: {from: 'n_isolate_power', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Intentar sacar al operador sin el equipo de rescate especializado'},
+                    c_wait_rescue: {from: 'n_isolate_power', to: 'n_end_ok', effects: {procedural: 10, security: 5, time: 10}, desc: 'Mantener la seguridad de la escena y esperar al equipo especializado'},
+                    c_first_aid_wait: {from: 'n_call_rescue', to: 'n_end_ok', effects: {empathy: 5, procedural: 5}, desc: 'Proporcionar soporte básico (primeros auxilios) mientras llega la ayuda'},
+                    c_direct_traffic: {from: 'n_call_rescue', to: 'n_end_fail', effects: {security: -10}, desc: 'Olvidarse del operador y dedicarse a controlar el tráfico de la zona'}
+                }
+            }
+        ],
+        "servicio": [
+            {
+                id: 's_acceso_no_autorizado',
+                title: 'Acceso No Autorizado',
+                area: 'servicio',
+                difficulty: 'facil',
+                est_time: 4,
+                start: 'n_start',
+                nodes: {
+                    n_start: {type: 'info', text: 'Una persona sin credencial intenta acceder a un piso restringido. Alega ser nuevo contratista.', choices: ['c_ask_id', 'c_deny_entry', 'c_ignore']},
+                    n_ask_id: {type: 'event', text: 'Pides amablemente su identificación y un contacto de la empresa. El hombre se pone nervioso.', choices: ['c_call_super', 'c_insist_entry']},
+                    n_end_ok: {type: 'end', text: 'El sospechoso es un ex-empleado que intentaba acceder a datos. El procedimiento de verificación funcionó correctamente.'},
+                    n_end_fail: {type: 'end', text: 'El hombre logra evadir al guardia o se genera una confrontación, escalando el incidente innecesariamente.'}
+                },
+                choices: {
+                    c_ask_id: {from: 'n_start', to: 'n_ask_id', effects: {procedural: 5, comms: 5, time: 5}, desc: 'Intervenir y solicitar la documentación de acceso al contratista'},
+                    c_deny_entry: {from: 'n_start', to: 'n_end_ok', effects: {procedural: 5, empathy: 5}, desc: 'Negar la entrada inmediatamente pero con calma y sugiriendo la oficina de administración'},
+                    c_ignore: {from: 'n_start', to: 'n_end_fail', effects: {security: -10, procedural: -5}, desc: 'Dejar que el encargado de turno resuelva la disputa sin tu intervención'},
+                    c_call_super: {from: 'n_ask_id', to: 'n_end_ok', effects: {procedural: 15, comms: 10, time: 5}, desc: 'Llamar al supervisor de contrato o de seguridad para verificar el permiso'},
+                    c_insist_entry: {from: 'n_ask_id', to: 'n_end_fail', effects: {security: -15, procedural: -10, empathy: -10}, desc: 'Exigirle el acceso y el nombre de su contacto con tono amenazante'}
+                }
+            },
+            {
+                id: 's_paquete_sospechoso',
+                title: 'Paquete Olvidado en Lobby',
+                area: 'servicio',
+                difficulty: 'medio',
+                est_time: 6,
+                start: 'n_start',
+                nodes: {
+                    n_start: {type: 'info', text: 'Un bolso de mano ha sido dejado solo en el lobby central por 15 minutos. No hay dueño visible. Alerta de nivel 2.', choices: ['c_approach_check', 'c_isolate_call', 'c_announce']},
+                    n_isolate_call: {type: 'event', text: 'Has establecido un perímetro de seguridad inicial y notificaste a tu central y a la policía.', choices: ['c_wait_expert', 'c_move_package']},
+                    n_end_ok: {type: 'end', text: 'Paquete analizado y declarado seguro. El procedimiento de seguridad y la comunicación fueron perfectos. Minimizaste el riesgo.'},
+                    n_end_fail: {type: 'end', text: 'El paquete contenía material pirotécnico inestable. Hubo una explosión menor y pánico entre los ocupantes.'}
+                },
+                choices: {
+                    c_approach_check: {from: 'n_start', to: 'n_end_fail', effects: {security: -20, procedural: -15}, desc: 'Acercarse e inspeccionar el contenido del bolso'},
+                    c_isolate_call: {from: 'n_start', to: 'n_isolate_call', effects: {procedural: 15, security: 15, comms: 10, time: 5}, desc: 'Establecer perímetro, no tocar y notificar inmediatamente a las autoridades'},
+                    c_announce: {from: 'n_start', to: 'n_end_fail', effects: {empathy: -5, procedural: -5}, desc: 'Anunciar por altavoz sobre el bolso perdido (puede alertar al dueño si es malicioso)'},
+                    c_wait_expert: {from: 'n_isolate_call', to: 'n_end_ok', effects: {procedural: 10, security: 10, time: 5}, desc: 'Mantener el perímetro y esperar que el equipo experto se haga cargo'},
+                    c_move_package: {from: 'n_isolate_call', to: 'n_end_fail', effects: {security: -25, procedural: -20}, desc: 'Mover el paquete a un lugar más seguro (por si acaso)'}
+                }
+            }
+        ],
+        "salud": [
+            {
+                id: 'h_agresion_paciente',
+                title: 'Manejo de Cliente/Paciente Agresivo',
+                area: 'salud',
+                difficulty: 'alto',
+                est_time: 6,
+                start: 'n_start',
+                nodes: {
+                    n_start: {type: 'info', text: 'Un hombre en la sala de espera está gritando y golpeando mobiliario, exigiendo atención. El personal médico está asustado.', choices: ['c_physical_restraint', 'c_intervene_distance', 'c_call_security_chief']},
+                    n_intervene_distance: {type: 'event', text: 'Te acercas con calma y le pides que se calme, manteniendo una distancia de seguridad. Él te ignora.', choices: ['c_talk_calmly', 'c_call_paramedics']},
+                    n_talk_calmly: {type: 'event', text: 'Sigues la desescalada verbal y preguntando su nombre. Gana 10 segundos de su atención.', choices: ['c_offer_safe_area', 'c_call_paramedics']},
+                    n_end_ok: {type: 'end', text: 'El cliente acepta ser acompañado a un área privada, donde el personal médico de emergencia se hace cargo. Evitaste la confrontación y protegiste al público. Excelente manejo de crisis.'},
+                    n_end_fail_physical: {type: 'end', text: 'El intento de contención física causa una reacción violenta. El cliente y el guardia sufren heridas leves. Falla en el protocolo de desescalada.'},
+                    n_end_fail_delay: {type: 'end', text: 'La demora o la falta de apoyo permiten que el cliente rompa una vitrina antes de ser contenido. Daño material y trauma a los testigos.'}
+                },
+                choices: {
+                    c_intervene_distance: {from: 'n_start', to: 'n_intervene_distance', effects: {procedural: 10, security: 5, empathy: 5, time: 5}, desc: 'Acercarse manteniendo la distancia de seguridad (buffer zone)'},
+                    c_call_security_chief: {from: 'n_start', to: 'n_intervene_distance', effects: {procedural: 5, comms: 10, time: 10}, desc: 'Llamar a la central de inmediato y solicitar apoyo, luego acercarse'},
+                    c_physical_restraint: {from: 'n_start', to: 'n_end_fail_physical', effects: {security: -15, empathy: -10}, desc: 'Intentar la contención física de inmediato sin desescalada'},
+                    c_talk_calmly: {from: 'n_intervene_distance', to: 'n_talk_calmly', effects: {empathy: 15, comms: 10, procedural: 5, time: 5}, desc: 'Usar lenguaje verbal y corporal de desescalada'},
+                    c_call_paramedics: {from: 'n_intervene_distance', to: 'n_end_fail_delay', effects: {time: -10, procedural: -5}, desc: 'Llamar a los médicos para que se encarguen del paciente'},
+                    c_offer_safe_area: {from: 'n_talk_calmly', to: 'n_end_ok', effects: {procedural: 10, empathy: 10, security: 5}, desc: 'Ofrecer acompañarlo a un área más privada y segura'}
+                }
+            },
+            {
+                id: 'h_paciente_fuga',
+                title: 'Fuga de Paciente Psiquiátrico',
+                area: 'salud',
+                difficulty: 'alto',
+                est_time: 7,
+                start: 'n_start',
+                nodes: {
+                    n_start: {type: 'info', text: 'Un paciente de la unidad psiquiátrica logra salir de su área. El personal de enfermería te pide ayuda para recapturarlo.', choices: ['c_pursuit', 'c_isolate_and_call', 'c_ask_description']},
+                    n_pursuit: {type: 'event', text: 'Lo encuentras en el jardín, agitado y asustado. No está agrediendo a nadie.', choices: ['c_calm_talk', 'c_try_catch']},
+                    n_end_ok: {type: 'end', text: 'El paciente fue devuelto a la unidad sin incidentes, usando comunicación y contención mínima. Procedimiento basado en el cuidado.'},
+                    n_end_fail: {type: 'end', text: 'El paciente se autolesiona o agrede al guardia durante la captura. Investigación interna en curso.'}
+                },
+                choices: {
+                    c_pursuit: {from: 'n_start', to: 'n_pursuit', effects: {time: -5, procedural: 5}, desc: 'Iniciar la búsqueda inmediata por las áreas conocidas'},
+                    c_isolate_and_call: {from: 'n_start', to: 'n_pursuit', effects: {procedural: 10, comms: 5, time: 10}, desc: 'Asegurar salidas y pedir apoyo antes de buscar'},
+                    c_ask_description: {from: 'n_start', to: 'n_pursuit', effects: {comms: 10, time: -5}, desc: 'Preguntar por descripción y antecedentes al personal'},
+                    c_calm_talk: {from: 'n_pursuit', to: 'n_end_ok', effects: {empathy: 15, procedural: 10, security: 5}, desc: 'Usar voz calmada y ofrecer ayuda sin contacto físico'},
+                    c_try_catch: {from: 'n_pursuit', to: 'n_end_fail', effects: {security: -10, empathy: -15}, desc: 'Intentar la contención física sin técnicas de desescalada'}
+                }
+            }
+        ],
+        "mineria": [
+            {
+                id: 'm_intruso_bodega',
+                title: 'Intrusión nocturna en Bodega de Alto Valor',
+                area: 'mineria',
+                difficulty: 'alto',
+                est_time: 10,
+                start: 'n_start',
+                nodes: {
+                    n_start: {type: 'info', text: 'Alarma de perímetro activada a las 02:00. Las cámaras muestran un individuo saltando la cerca y dirigiéndose a la bodega de repuestos críticos.', choices: ['c_send_patrol', 'c_monitor_only', 'c_call_police']},
+                    n_send_patrol: {type: 'event', text: 'Enviaste una unidad. El intruso está escondido en un punto ciego. Riesgo de emboscada.', choices: ['c_intercept', 'c_establish_overwatch']},
+                    n_call_police: {type: 'event', text: 'Notificaste a la policía y mantienes la vigilancia. El intruso comienza a moverse hacia la bodega.', choices: ['c_intercept_soft', 'c_wait_police']},
+                    n_end_ok: {type: 'end', text: 'El intruso fue inmovilizado y entregado a las autoridades. Se evitó el robo y se mantuvo la seguridad del personal.'},
+                    n_end_fail: {type: 'end', text: 'El intruso evade a los guardias o hiere a uno de ellos antes de huir con material valioso. Falla grave en el control de acceso.'}
+                },
+                choices: {
+                    c_send_patrol: {from: 'n_start', to: 'n_send_patrol', effects: {time: -5, security: -5}, desc: 'Enviar patrulla a inspeccionar la zona de inmediato'},
+                    c_monitor_only: {from: 'n_start', to: 'n_end_fail', effects: {security: -10, procedural: -10}, desc: 'Solo monitorear y esperar a ver qué hace'},
+                    c_call_police: {from: 'n_start', to: 'n_call_police', effects: {procedural: 10, comms: 15, time: 5}, desc: 'Notificar inmediatamente a la policía y a la central de operaciones'},
+                    c_intercept: {from: 'n_send_patrol', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Interceptar al intruso sin saber su armamento'},
+                    c_establish_overwatch: {from: 'n_send_patrol', to: 'n_call_police', effects: {security: 10, procedural: 5, time: 10}, desc: 'Establecer vigilancia discreta y esperar la llegada de la policía'},
+                    c_intercept_soft: {from: 'n_call_police', to: 'n_end_fail', effects: {security: -10}, desc: 'Intentar disuadirlo verbalmente (riesgo si está armado)'},
+                    c_wait_police: {from: 'n_call_police', to: 'n_end_ok', effects: {procedural: 10, security: 10, comms: 5}, desc: 'Mantener la vigilancia y esperar a la fuerza pública'}
+                }
+            },
+            {
+                id: 'm_conato_derrame',
+                title: 'Conato de Derrame de Flotación',
+                area: 'mineria',
+                difficulty: 'medio',
+                est_time: 6,
+                start: 'n_start',
+                nodes: {
+                    n_start: {type: 'info', text: 'Recibes un reporte de una pequeña fuga en una línea de flotación. El área de la máquina está cerca de un desagüe.', choices: ['c_stop_leak_solo', 'c_fire_protocol', 'c_notify_hsm']},
+                    n_fire_protocol: {type: 'event', text: 'Activaste la alarma local y pediste apoyo. El químico no es inflamable pero sí contaminante.', choices: ['c_use_absorbent', 'c_wait_firemen']},
+                    n_notify_hsm: {type: 'event', text: 'El equipo de Seguridad y Medio Ambiente (SSMA) está en camino con equipo de contención.', choices: ['c_isolate_source', 'c_wait_hsm']},
+                    n_end_ok: {type: 'end', text: 'La fuga fue contenida con mínimo daño ambiental y nula afectación a personal. Procedimiento correcto.'},
+                    n_end_fail: {type: 'end', text: 'La fuga alcanzó el desagüe o el intento de contención falló, causando una pequeña explosión que hiere a personal y detiene la planta.'}
+                },
+                choices: {
+                    c_stop_leak_solo: {from: 'n_start', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Intentar detener la fuga con herramientas a mano sin equipo de protección ni apoyo'},
+                    c_fire_protocol: {from: 'n_start', to: 'n_fire_protocol', effects: {procedural: 10, comms: 5, time: -5}, desc: 'Activar el protocolo de emergencia (alarma, evacuación) y llamar a bomberos'},
+                    c_notify_hsm: {from: 'n_start', to: 'n_notify_hsm', effects: {procedural: 15, security: 10, time: 5, comms: 10}, desc: 'Notificar al equipo SSMA y pedir equipo de contención (opción más segura)'},
+                    c_use_absorbent: {from: 'n_fire_protocol', to: 'n_end_fail', effects: {time: -10, security: -5}, desc: 'Intentar usar material absorbente por tu cuenta sin equipo SSMA'},
+                    c_wait_firemen: {from: 'n_fire_protocol', to: 'n_notify_hsm', effects: {procedural: 5, time: 10}, desc: 'Asegurar el perímetro y esperar que el personal SSMA/bomberos tomen el control'},
+                    c_isolate_source: {from: 'n_notify_hsm', to: 'n_end_fail', effects: {security: -10, procedural: -5}, desc: 'Intentar aislar el origen de la fuga (requiere EPP especializado)'},
+                    c_wait_hsm: {from: 'n_notify_hsm', to: 'n_end_ok', effects: {procedural: 10, security: 10, comms: 5}, desc: 'Mantener perímetro y asegurar que el equipo de SSMA proceda'}
+                }
+            }
+        ],
+        "energia": [
+            {
+                id: 'e_vandalismo_subestacion',
+                title: 'Vandalismo en Subestación Remota',
+                area: 'energia',
+                difficulty: 'alto',
+                est_time: 12,
+                start: 'n_start',
+                nodes: {
+                    n_start: {type: 'info', text: 'Sistema de CCTV muestra a 3 individuos entrando al perímetro de una subestación eléctrica remota. Están dañando el cercado.', choices: ['c_intervene_direct', 'c_call_police_first', 'c_activate_siren']},
+                    n_call_police_first: {type: 'event', text: 'Llamaste a la policía de inmediato y notificaste a operaciones. Los sujetos no han llegado a los transformadores.', choices: ['c_warn_loud', 'c_wait_silent']},
+                    n_activate_siren: {type: 'event', text: 'Activaste la sirena y luces. Los sujetos se asustan y corren hacia su vehículo.', choices: ['c_pursuit_vehicle', 'c_secure_damage']},
+                    n_end_ok: {type: 'end', text: 'Los sujetos fueron detenidos por la policía. No hubo daños a la infraestructura crítica. Respuesta de seguridad impecable.'},
+                    n_end_fail: {type: 'end', text: 'Los sujetos dañaron un transformador clave, causando un apagón en el sector y un riesgo de seguridad para el guardia.'}
+                },
+                choices: {
+                    c_intervene_direct: {from: 'n_start', to: 'n_end_fail', effects: {security: -20, procedural: -15}, desc: 'Intervenir solo sin apoyo (riesgo vital por electricidad y agresión)'},
+                    c_call_police_first: {from: 'n_start', to: 'n_call_police_first', effects: {procedural: 15, comms: 10, time: 5}, desc: 'Notificar a la policía y operaciones como primera medida'},
+                    c_activate_siren: {from: 'n_start', to: 'n_activate_siren', effects: {time: -5, procedural: 5}, desc: 'Activar sirena y luces de inmediato para disuadir a los intrusos'},
+                    c_warn_loud: {from: 'n_call_police_first', to: 'n_activate_siren', effects: {time: -5}, desc: 'Usar altavoz para advertir su presencia (puede ser contraproducente)'},
+                    c_wait_silent: {from: 'n_call_police_first', to: 'n_end_ok', effects: {procedural: 10, security: 10, comms: 5}, desc: 'Mantener la vigilancia encubierta hasta la llegada de la fuerza pública'},
+                    c_pursuit_vehicle: {from: 'n_activate_siren', to: 'n_end_fail', effects: {security: -10, time: -10}, desc: 'Perseguir a los intrusos en vehículo sin esperar refuerzos'},
+                    c_secure_damage: {from: 'n_activate_siren', to: 'n_end_ok', effects: {procedural: 5, security: 5, time: 10}, desc: 'Verificar daños desde la distancia y asegurar el perímetro hasta la llegada de la policía'}
+                }
+            }
+        ]
     };
   </script>
 </body>
+
 </html>
