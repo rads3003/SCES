@@ -488,6 +488,7 @@
     .feedback-card {
       margin-top: 20px;
       padding: 20px;
+      /* Color por defecto (positivo) */
       background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, transparent 100%);
       border-left: 4px solid var(--success);
       animation: fadeIn 0.5s ease;
@@ -960,6 +961,14 @@
     // Configuración de Reacción Táctica (en milisegundos)
     const MAX_REACTION_TIME = 20000; // 20 segundos para vacilación
     const MIN_REACTION_TIME = 3000;  // 3 segundos para impulsividad
+
+    // --- CONFIGURACIÓN DE UMBRAL TÁCTICO REFINADA ---
+    // El umbral de falla crítica se mantiene en 2.
+    const CRITICAL_SECURITY_THRESHOLD = 2; 
+    const GENERIC_CRITICAL_FAIL_NODE = 'n_end_critical_fail';
+    const MINIMUM_PASSING_SCORE = 60; // Umbral de porcentaje total (60%)
+    const MISSION_TOTAL_FAIL_NODE = 'n_end_mission_fail'; 
+    // --------------------------------------------------------------------------
     
     // Estado del juego
     let gameState = {
@@ -973,7 +982,7 @@
       score: 0,
       tensionLevel: 0, 
       nodeLoadTime: 0, 
-      faceAnalysisActive: false // NUEVO: Flag para la biometría
+      faceAnalysisActive: false
     };
     
     // --- Lógica del Modal de Notificación ---
@@ -1222,6 +1231,18 @@
     };
 
     const NODES = {
+      // --- NODO DE FALLA CRÍTICA (AÑADIDO) ---
+      [GENERIC_CRITICAL_FAIL_NODE]: {
+        type: 'end',
+        text: '🚨 Falla Crítica de Protocolo: Las acciones tomadas comprometieron la seguridad o el procedimiento a un nivel inaceptable, resultando en un incidente grave y finalizando la simulación. **No cumpliste con las pautas mínimas de seguridad operativa.**',
+      },
+      // --- NODO DE FALLA POR PORCENTAJE (NUEVO) ---
+      [MISSION_TOTAL_FAIL_NODE]: {
+        type: 'end',
+        text: '📉 Misión Incompleta: Aunque no cometiste una falla crítica inmediata, la acumulación de decisiones subóptimas y la baja puntuación final (menos del 60%) indican que el caso no se resolvió de manera eficiente o segura. **Se requiere reentrenamiento táctico.**',
+      },
+      // ----------------------------------------
+
       // NODOS PARA ESPACIO PÚBLICO
       n_start: {
         type: 'start',
@@ -1279,15 +1300,27 @@
         type: 'end',
         text: 'El uso excesivo de fuerza generó un incidente legal por lesiones. El sujeto fue detenido, pero la empresa enfrenta una demanda.'
       },
-      // NODOS ESPECÍFICOS PARA MANEJO DE CRISIS PSIQUIÁTRICA (Añadido)
+      // NODOS ESPECÍFICOS PARA MANEJO DE CRISIS PSIQUIÁTRICA
       n_start_psiquiatrica: {
         type: 'start',
         text: 'Un individuo presenta descompensación psiquiátrica en el área de cajas, gritando y causando pánico. La prioridad es la seguridad de terceros y la desescalada. ¿Qué hace primero?',
         choices: ['c_desescalada_verbal', 'c_contencion_fisica_rapida', 'c_aislamiento_zona', 'c_llamar_policia_medica']
       },
+      // NUEVO NODO: Evaluación de Riesgo y Desescalada Activa (Paso 2)
+      n_aislamiento_exitoso: { 
+        type: 'continue',
+        text: 'Ha conseguido aislar la zona y notificar a la central/emergencias. Sin embargo, el individuo sigue agitado y comienza a mostrar signos de paranoia, acercándose al perímetro de seguridad. ¿Cuál es su estrategia de desescalada verbal inmediata?',
+        choices: ['c_mantener_distancia_dialogo', 'c_ofrecer_agua_lugar_seguro', 'c_acercarse_ayudar_fisico', 'c_amenaza_uso_fuerza']
+      },
+      // NUEVO NODO: Coordinación y Cierre de Caso (Paso 3)
+      n_desescalada_avanzada: {
+        type: 'continue',
+        text: 'La persona ha cedido ligeramente y se ha retirado a un punto de encuentro, aunque sigue reacia a cooperar. Los servicios de emergencia (SAMU/Policía) han llegado al exterior. ¿Cuál es su acción procedimental final?',
+        choices: ['c_coordinar_emergencia', 'c_solicitar_identificacion', 'c_relajar_perimetro']
+      },
       n_end_ok_psiquiatrica: {
         type: 'end',
-        text: 'Excelente manejo. La desescalada verbal y el aislamiento temporal permitieron la llegada de servicios de emergencia especializados, minimizando el riesgo para el cliente y terceros.'
+        text: 'Excelente manejo. La desescalada verbal, el aislamiento temporal y la coordinación con los servicios de emergencia especializados permitieron una resolución exitosa del caso, minimizando el riesgo para el cliente y terceros.'
       },
       n_end_fail_psiquiatrica: {
         type: 'end',
@@ -1454,13 +1487,13 @@
         },
         desc: 'Usar el bastón de servicio para forzar la detención (alto riesgo de escalamiento y lesión).'
       },
-      // OPCIONES PARA CRISIS PSIQUIÁTRICA (Añadido)
+      // OPCIONES PARA CRISIS PSIQUIÁTRICA (Paso 1)
       c_desescalada_verbal: {
         from: 'n_start_psiquiatrica',
-        to: 'n_end_ok_psiquiatrica',
+        to: 'n_aislamiento_exitoso', // Cambio a nodo de continuidad
         effects: {
-          empathy: 20,
-          procedural: 10,
+          empathy: 10,
+          procedural: 5,
           security: 5,
           time: 5
         },
@@ -1478,22 +1511,88 @@
       },
       c_aislamiento_zona: {
         from: 'n_start_psiquiatrica',
-        to: 'n_end_ok_psiquiatrica',
+        to: 'n_aislamiento_exitoso', // Cambio a nodo de continuidad
         effects: {
           security: 10,
           comms: 5,
           procedural: 5
         },
-        desc: 'Establecer un perímetro de seguridad, alejar a clientes y contener el área.'
+        desc: 'Establecer un perímetro de seguridad, alejar a clientes y contener el área (Acción de Seguridad).'
       },
       c_llamar_policia_medica: {
         from: 'n_start_psiquiatrica',
-        to: 'n_end_ok_psiquiatrica',
+        to: 'n_aislamiento_exitoso', // Cambio a nodo de continuidad
         effects: {
           comms: 15,
           procedural: 10
         },
         desc: 'Llamar a servicios de emergencia (SAMU/Policía) e indicar que se trata de una crisis de salud mental.'
+      },
+      // OPCIONES PARA NODO 2 (n_aislamiento_exitoso) - Desescalada activa
+      c_mantener_distancia_dialogo: {
+        from: 'n_aislamiento_exitoso',
+        to: 'n_desescalada_avanzada',
+        effects: {
+          security: 5,
+          empathy: 10,
+          procedural: 5
+        },
+        desc: 'Mantener la distancia de seguridad (2 brazos de largo) y continuar el diálogo de desescalada, confirmando que la ayuda está cerca.'
+      },
+      c_ofrecer_agua_lugar_seguro: {
+        from: 'n_aislamiento_exitoso',
+        to: 'n_desescalada_avanzada',
+        effects: {
+          empathy: 15,
+          time: 5
+        },
+        desc: 'Ofrecer una necesidad básica (agua) y sugerir moverse a un área de mayor calma y privacidad.'
+      },
+      c_acercarse_ayudar_fisico: { // Mal camino
+        from: 'n_aislamiento_exitoso',
+        to: 'n_end_fail_psiquiatrica',
+        effects: {
+          security: -15,
+          empathy: -10
+        },
+        desc: 'Acercarse en solitario para intentar calmarlo con contacto físico o invadir su espacio personal.'
+      },
+      c_amenaza_uso_fuerza: { // Mal camino
+        from: 'n_aislamiento_exitoso',
+        to: 'n_end_fail_psiquiatrica',
+        effects: {
+          empathy: -20,
+          procedural: -10
+        },
+        desc: 'Utilizar un tono de voz fuerte o amenazar con el uso de la fuerza/bastón si no se calma.'
+      },
+      // OPCIONES PARA NODO 3 (n_desescalada_avanzada) - Cierre de caso
+      c_coordinar_emergencia: {
+        from: 'n_desescalada_avanzada',
+        to: 'n_end_ok_psiquiatrica',
+        effects: {
+          procedural: 10,
+          comms: 10,
+          security: 5
+        },
+        desc: 'Establecer comunicación con SAMU/Policía para entregar la situación de forma coordinada, detallando el estado de la persona y el entorno.'
+      },
+      c_solicitar_identificacion: { // Mal camino
+        from: 'n_desescalada_avanzada',
+        to: 'n_end_fail_psiquiatrica',
+        effects: {
+          empathy: -10,
+          procedural: -5
+        },
+        desc: 'Exigir inmediatamente la identificación de la persona antes de que intervengan los servicios de emergencia.'
+      },
+      c_relajar_perimetro: { // Mal camino
+        from: 'n_desescalada_avanzada',
+        to: 'n_end_fail_psiquiatrica',
+        effects: {
+          security: -10
+        },
+        desc: 'Relajar completamente el perímetro de seguridad y dejar que la persona deambule libremente mientras espera a la policía.'
       },
       // OPCIONES PARA CORPORATIVO/OFICINAS
       c_desescalada_empatica: {
@@ -1561,6 +1660,7 @@
                 const badgeClass = `difficulty-${scenario.difficulty}`;
                 const scenarioElement = document.createElement('div');
                 scenarioElement.className = 'scenario-card card';
+                scenarioElement.setAttribute('tabindex', '0');
                 scenarioElement.innerHTML = `
                   <div>
                     <h4 style="margin-bottom: 5px;">${scenario.title} <span class="difficulty-badge ${badgeClass}">${scenario.difficulty.toUpperCase()}</span></h4>
@@ -1593,6 +1693,9 @@
         // 1. Resetear Estado
         gameState.currentScenario = scenario;
         gameState.dimensions = {procedural: 0, security: 0, comms: 0, time: 0, empathy: 0};
+        // Inicializar dimensiones con un valor base (ej. 20)
+        DIMENSIONS.forEach(dim => gameState.dimensions[dim] = 20); 
+
         gameState.actions = [];
         gameState.tensionLevel = 0; // Resetear Tensión Operacional
 
@@ -1641,8 +1744,8 @@
         // 1. Mostrar el contenido del nodo
         document.getElementById('node-text').textContent = node.text;
 
-        // 2. Ocultar feedback
-        document.getElementById('feedback-card').style.display = 'none';
+        // 2. Ocultar feedback (Se muestra/Oculta al manejar la elección)
+        // document.getElementById('feedback-card').style.display = 'none';
 
         // 3. Mostrar opciones o finalizar
         const choicesDiv = document.getElementById('choices');
@@ -1668,7 +1771,7 @@
                         choiceElement.setAttribute('tabindex', '0');
                         choiceElement.innerHTML = `
                           <div class="choice-title">Acción: ${choice.desc}</div>
-                          <div class="choice-effects">
+                          <div class="choice-effects" style="opacity: 0.5;">
                             ${DIMENSIONS.map(dim => {
                                 const effect = choice.effects[dim] || 0;
                                 if (effect !== 0) {
@@ -1696,9 +1799,10 @@
         if (!choice) return;
 
         const reactionTime = Date.now() - gameState.nodeLoadTime;
+        const isFirstChoice = (gameState.actions.length === 0);
+        
         let timePenalty = 0;
         let reactionFeedback = '';
-        const currentTension = gameState.tensionLevel;
 
         // 1. Cálculo de Penalización/Bono por Tiempo
         if (reactionTime > MAX_REACTION_TIME) {
@@ -1712,51 +1816,108 @@
             reactionFeedback = '<strong>✅ Reacción Óptima:</strong> La respuesta fue oportuna y bien medida.';
         }
         
-        // 2. Aplicar el efecto de la elección
+        // 2. Aplicar el efecto de la elección y calcular el efecto neto
+        let netEffect = timePenalty; // Iniciar con el efecto del tiempo
+        let securityWasPenalized = false;
+        
         DIMENSIONS.forEach(dim => {
             const effect = choice.effects[dim] || 0;
-            gameState.dimensions[dim] = Math.max(0, gameState.dimensions[dim] + effect);
+            netEffect += effect;
+
+            if (dim === 'security' && effect < 0) {
+                securityWasPenalized = true;
+            }
+
+            // Aplicar el efecto y asegurar que la puntuación no baje de 0 ni suba de 20
+            gameState.dimensions[dim] = Math.min(20, Math.max(0, gameState.dimensions[dim] + effect));
         });
 
-        // 3. Ajustar la dimensión 'Time' y Tensión
-        gameState.dimensions['time'] = Math.max(0, gameState.dimensions['time'] + timePenalty);
-        
-        // La tensión se ajusta por la seguridad (negativa) y la empatía (positiva)
+        // Aplicar el efecto del tiempo por separado para que el valor ya esté reflejado en la dimensión
+        gameState.dimensions['time'] = Math.min(20, Math.max(0, gameState.dimensions['time'] + timePenalty));
+
+        // 3. Ajustar la tensión (sin impacto en el criterio de feedback por ser un valor derivado)
         let tensionChange = -(choice.effects.security || 0) + (choice.effects.empathy || 0); 
         gameState.tensionLevel = Math.max(0, gameState.tensionLevel + tensionChange);
 
 
-        // 4. Registrar la acción
+        // 4. Determinar si se debe mostrar feedback inmediato (Lógica nueva del usuario)
+        let shouldDisplayFeedback = false;
+        
+        if (securityWasPenalized) {
+            shouldDisplayFeedback = true; // Error crítico: penalización directa en seguridad
+        } else if (netEffect < 0) {
+            shouldDisplayFeedback = true; // Error general: efecto neto negativo
+        } else if (timePenalty < 0) {
+            shouldDisplayFeedback = true; // Error de tiempo: penalización por vacilación o impulsividad
+        }
+
+
+        // 5. Determinar el siguiente nodo y aplicar LÓGICA DE VALIDACIÓN DE UMBRAL TÁCTICO
+        let nextNodeId = choice.to;
+        const targetNode = NODES[nextNodeId]; 
+
+        // --- 5.1. Chequeo de Falla Crítica Inmediata (Solo en la primera acción) ---
+        if (isFirstChoice && gameState.dimensions.security < CRITICAL_SECURITY_THRESHOLD) {
+            nextNodeId = GENERIC_CRITICAL_FAIL_NODE;
+            shouldDisplayFeedback = true; // Forzar feedback en caso de fallo crítico
+        } 
+        
+        // --- 5.2. Chequeo de Falla por Porcentaje al Final ---
+        if (targetNode && targetNode.type === 'end' && nextNodeId !== GENERIC_CRITICAL_FAIL_NODE) {
+            const finalScoreEstimate = calculatePartialScore();
+            if (finalScoreEstimate < MINIMUM_PASSING_SCORE) {
+                // Redirigir al nodo de falla por score bajo.
+                nextNodeId = MISSION_TOTAL_FAIL_NODE;
+                shouldDisplayFeedback = true; // Forzar feedback al final de la misión fallida
+            }
+        }
+        
+        // 6. Registrar la acción
         gameState.actions.push({
             nodeId: gameState.currentNode,
             choiceDesc: choice.desc,
             effects: choice.effects,
+            time_penalty: timePenalty, // Registrar el efecto del tiempo para el reporte
             time: reactionTime / 1000, // segundos
             feedback: reactionFeedback
         });
 
-        // 5. Mostrar Feedback Inmediato
-        showFeedback(choice, reactionFeedback);
+        // 7. Mostrar Feedback Inmediato (si aplica)
+        // Se pasa la decisión de si mostrar o no la tarjeta.
+        showFeedback(choice, reactionFeedback, shouldDisplayFeedback);
 
-        // 6. Actualizar UI
+        // 8. Actualizar UI
         updateDimensionsDisplay();
         updateTensionDisplay();
 
-        // 7. Cargar el siguiente nodo
-        loadNode(choice.to);
+        // 9. Cargar el siguiente nodo
+        loadNode(nextNodeId);
     }
 
-    function showFeedback(choice, reactionFeedback) {
+    // MODIFICADA: Ahora recibe un flag para decidir si debe mostrar la tarjeta.
+    function showFeedback(choice, reactionFeedback, shouldDisplay) {
         const feedbackCard = document.getElementById('feedback-card');
         const feedbackContent = document.getElementById('immediate-feedback');
         
-        // Determinar si el feedback es positivo o negativo para el color de la tarjeta
-        const totalEffect = DIMENSIONS.reduce((sum, dim) => sum + (choice.effects[dim] || 0), 0) + (choice.effects.time || 0);
+        // NUEVA LÓGICA: Ocultar si no se debe mostrar feedback por ser una respuesta correcta/neutral
+        if (!shouldDisplay) {
+            feedbackCard.style.display = 'none';
+            return;
+        }
+
+        // Si llega aquí, es porque shouldDisplay es true (acción subóptima/errónea/penalizada)
         
-        if (totalEffect < 0 || gameState.dimensions.security < 5) {
+        // Determinar si el feedback es positivo o negativo para el color de la tarjeta
+        // Usamos el último elemento registrado en actions para obtener el time_penalty
+        const lastAction = gameState.actions[gameState.actions.length - 1];
+        const totalEffect = DIMENSIONS.reduce((sum, dim) => sum + (choice.effects[dim] || 0), 0) + (lastAction?.time_penalty || 0); 
+        
+        if (totalEffect < 0 || gameState.dimensions.security < CRITICAL_SECURITY_THRESHOLD) {
             feedbackCard.classList.add('warning');
+            feedbackCard.style.borderLeftColor = 'var(--danger)';
         } else {
             feedbackCard.classList.remove('warning');
+            feedbackCard.style.borderLeftColor = 'var(--success)';
         }
 
         feedbackContent.innerHTML = `
@@ -1765,13 +1926,16 @@
           <div class="choice-effects">
             ${DIMENSIONS.map(dim => {
                 const effect = choice.effects[dim] || 0;
-                if (effect !== 0) {
-                    const sign = effect > 0 ? '🔺' : '🔻';
-                    const color = effect > 0 ? 'var(--success)' : 'var(--danger)';
-                    return `<span style="color: ${color}; font-weight: 600;">${sign} ${Math.abs(effect)} ${dim.charAt(0).toUpperCase() + dim.slice(1)}</span>`;
+                // Incluir el time_penalty solo en la dimensión 'time'
+                const finalEffect = (dim === 'time') ? effect + (lastAction?.time_penalty || 0) : effect; 
+                
+                if (finalEffect !== 0) {
+                    const sign = finalEffect > 0 ? '🔺' : '🔻';
+                    const color = finalEffect > 0 ? 'var(--success)' : 'var(--danger)';
+                    return `<span style="color: ${color}; font-weight: 600;">${sign} ${Math.abs(finalEffect)} ${dim.charAt(0).toUpperCase() + dim.slice(1)}</span>`;
                 }
                 return '';
-            }).join('<span style="color: var(--text-secondary);"> | </span>')}
+            }).filter(h => h.trim() !== '').join('<span style="color: var(--text-secondary);"> | </span>')}
           </div>
         `;
         feedbackCard.style.display = 'block';
@@ -1785,8 +1949,10 @@
         let subtitle = 'Desempeño Aceptable. Hubo puntos críticos, pero la misión fue completada.';
         if (finalScore >= 80) {
             subtitle = '¡Éxito Táctico! Demostraste un nivel de protocolo y control excepcional.';
-        } else if (finalScore < 50) {
+        } else if (finalScore < MINIMUM_PASSING_SCORE) {
             subtitle = 'Falla Crítica. El procedimiento falló y el riesgo operacional aumentó. Se requiere reentrenamiento.';
+        } else if (finalScore >= MINIMUM_PASSING_SCORE) {
+             subtitle = 'Desempeño Satisfactorio. Cumpliste con el umbral mínimo de aprobación, pero hay espacio para mejorar.';
         }
         document.querySelector('.report-header .subtitle').textContent = subtitle;
 
@@ -1820,14 +1986,19 @@
         const reportActions = document.getElementById('report-actions');
         reportActions.innerHTML = gameState.actions.map((action, index) => {
             const effectsHTML = DIMENSIONS.map(dim => {
-                const effect = action.effects[dim] || 0;
+                let effect = action.effects[dim] || 0;
+                // Incluir la penalización/bono de tiempo en la dimensión 'time'
+                if (dim === 'time') {
+                    effect += action.time_penalty || 0;
+                }
+                
                 if (effect !== 0) {
                     const sign = effect > 0 ? '+' : '';
                     const color = effect > 0 ? 'var(--success)' : 'var(--danger)';
                     return `<span style="color: ${color};">${sign}${effect} ${dim}</span>`;
                 }
                 return '';
-            }).join(' | ');
+            }).filter(h => h.length > 0).join(' | ');
 
             return `
               <div class="action-item">
@@ -1840,8 +2011,12 @@
 
         // Manejadores de Botones
         document.getElementById('btn-replay').onclick = () => {
-            selectArea(gameState.currentArea); // Vuelve a la selección de escenarios de esa área
-            // También se podría hacer: startScenario(gameState.currentScenario.id);
+            // CAMBIO SOLICITADO: Reinicia directamente el mismo escenario.
+            if (gameState.currentScenario) {
+                 startScenario(gameState.currentScenario.id); 
+            } else {
+                 selectArea(gameState.currentArea); // Fallback
+            }
         };
         document.getElementById('btn-export-json').onclick = exportReport;
         document.getElementById('btn-print').onclick = printReport;
@@ -1862,6 +2037,10 @@
           nodeLoadTime: 0,
           faceAnalysisActive: gameState.faceAnalysisActive // Mantiene el estado de la biometría
         };
+        
+        // Asegurar que las dimensiones se reinicien al valor inicial de 20
+        DIMENSIONS.forEach(dim => gameState.dimensions[dim] = 20); 
+
         updateDimensionsDisplay();
         updateTensionDisplay();
         switchView('view-area');
@@ -1869,7 +2048,7 @@
         document.getElementById('scenarios-container').style.display = 'none';
         
         if (gameState.faceAnalysisActive) {
-            toggleFaceAnalysis(); // Desactiva la biometría al resetear
+            // No desactiva la cámara si está activa, solo la bandera visual, para no pedir permisos de nuevo
         }
         
         showModal('♻️ Sistema Reiniciado', 'El simulador ha sido reseteado. Por favor, seleccione un área de desempeño para comenzar.');
