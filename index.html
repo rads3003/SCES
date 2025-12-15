@@ -1121,15 +1121,427 @@
         DIMENSIONS.forEach(dim => {
             totalWeightedScore += gameState.dimensions[dim] * WEIGHTS[dim];
         });
-
+        
         // Normalize the score to a 0-100 range, capping at 100.
         // We use a factor of 5 to scale max 20 points to 100%.
         const normalizedScore = Math.min(100, Math.max(0, totalWeightedScore * 5));
         return Math.round(normalizedScore);
     }
 
-
     // --- Lógica del Juego ---
+
+    // Definición de Escenarios, Nodos y Opciones
+    const SCENARIOS = {
+      comercial: [
+        // INICIO: Escenarios Agregados por Analista de Inteligencia (OCTO) - 5 Escenarios
+        {
+          id: 'psiquiatrica',
+          title: 'Manejo de Persona con Descompensación Psiquiátrica', // Escenario 1: Solicitado como prioridad
+          area: 'Comercial/Retail',
+          difficulty: 'alto',
+          est_time: 15,
+          start: 'n_start_psiquiatrica' 
+        },
+        {
+          id: 'asalto_armado',
+          title: 'Asalto a Mano Armada en Tienda', // Escenario 2
+          area: 'Comercial/Retail',
+          difficulty: 'alto',
+          est_time: 10,
+          start: 'n_start_hurto' // Se utiliza un nodo existente como placeholder para mantener la funcionalidad mínima
+        },
+        {
+          id: 'evacuacion_emergencia',
+          title: 'Evacuación de Emergencia por Amenaza', // Escenario 3
+          area: 'Comercial/Retail',
+          difficulty: 'medio',
+          est_time: 10,
+          start: 'n_start_hurto' // Se utiliza un nodo existente como placeholder
+        },
+        {
+          id: 'manifestacion_hostil',
+          title: 'Manifestación Hostil en Entrada Principal', // Escenario 4
+          area: 'Comercial/Retail',
+          difficulty: 'alto',
+          est_time: 20,
+          start: 'n_start_hurto' // Se utiliza un nodo existente como placeholder
+        },
+        {
+          id: 'fraude_interno',
+          title: 'Detección de Fraude o Colusión Interna', // Escenario 5
+          area: 'Comercial/Retail',
+          difficulty: 'medio',
+          est_time: 5,
+          start: 'n_start_hurto' // Se utiliza un nodo existente como placeholder
+        },
+        // FIN: Escenarios Agregados por Analista de Inteligencia (OCTO) - 5 Escenarios
+        {
+          id: 'hurto_flagrante',
+          title: 'Hurto Flagrante con Resistencia', // Escenario Original
+          area: 'Comercial/Retail',
+          difficulty: 'medio',
+          est_time: 5,
+          start: 'n_start_hurto'
+        }
+      ],
+      industrial: [
+        {
+          id: 'robo_vehiculo',
+          title: 'Intento de Robo de Carga y Vehículo',
+          area: 'Industrial/Logístico',
+          difficulty: 'alto',
+          est_time: 10,
+          start: 'n_start_robo'
+        }
+      ],
+      servicio: [
+        {
+          id: 'acceso_no_autorizado',
+          title: 'Acceso No Autorizado y Hostil',
+          area: 'Corporativo/Oficinas',
+          difficulty: 'medio',
+          est_time: 5,
+          start: 'n_start_acceso'
+        }
+      ],
+      publico_abierto: [
+        {
+          id: 'pelea_masiva',
+          title: 'Pelea Masiva en Evento',
+          area: 'Espacio Público Abierto',
+          difficulty: 'alto',
+          est_time: 15,
+          start: 'n_start'
+        }
+      ],
+      salud: [],
+      mineria: [],
+      energia: [],
+      entidades_portuarias: [],
+      otros_servicios: []
+    };
+
+    const NODES = {
+      // NODOS PARA ESPACIO PÚBLICO
+      n_start: {
+        type: 'start',
+        text: 'Una pelea entre dos facciones ha iniciado. Es vital contener la situación sin que escale. ¿Cuál es su primera acción?',
+        choices: ['c_intervencion_verbal', 'c_llamar_refuerzos', 'c_uso_fuerza']
+      },
+      n_verbal: {
+        type: 'continue',
+        text: 'Su intervención verbal ha captado la atención, pero las personas siguen confrontándose y la tensión es alta. Debe separarlas para aislarlas y evitar daños a terceros.',
+        choices: ['c_separar', 'c_aislar']
+      },
+      n_end_ok: {
+        type: 'end',
+        text: 'Contuviste a las personas sin usar la fuerza innecesaria y restableciste el orden. El manejo de multitudes fue eficaz.'
+      },
+      n_end_fail: {
+        type: 'end',
+        text: 'La intervención tardía o agresiva provoca que más personas se unan a la pelea. El evento es temporalmente detenido.'
+      },
+      // NODOS PARA INDUSTRIAL/LOGÍSTICO
+      n_start_robo: {
+        type: 'start',
+        text: 'Tres individuos armados intentan forzar un camión de alto valor. Usted está solo y sin ser detectado. ¿Cuál es su acción inicial?',
+        choices: ['c_activar_alarma_panico', 'c_comunicar_central', 'c_confrontar_directo']
+      },
+      n_evaluar_riesgo: {
+        type: 'continue',
+        text: 'Ha alertado a la central. Debe esperar refuerzos. Los sujetos están a punto de abrir el camión. ¿Intenta una distracción o mantiene la posición?',
+        choices: ['c_distraccion', 'c_mantener_posicion']
+      },
+      n_end_ok_robo: {
+        type: 'end',
+        text: 'El plan de contención y comunicación con la central fue eficaz. La policía interceptó a los asaltantes sin daños al personal ni pérdida de carga.'
+      },
+      n_end_fail_robo: {
+        type: 'end',
+        text: 'La confrontación directa causó un enfrentamiento armado. Los asaltantes escaparon y un guardia resultó herido.'
+      },
+      // NODOS PARA COMERCIAL/RETAIL
+      n_start_hurto: {
+        type: 'start',
+        text: 'El sujeto interceptado por hurto lo empuja. Debe contener la huida de la persona y asegurar la mercancía sin escalamiento innecesario. ¿Cuál es su primera acción?',
+        choices: ['c_retener_fisico', 'c_activar_alarma_interna', 'c_perseguir_exterior']
+      },
+      n_contencion: {
+        type: 'continue',
+        text: 'La persona intenta zafarse con violencia. Debe controlarla sin causar lesiones. ¿Qué técnica usa?',
+        choices: ['c_control_articular', 'c_uso_bastón']
+      },
+      n_end_ok_hurto: {
+        type: 'end',
+        text: 'El sujeto fue contenido con la fuerza mínima necesaria y puesto a disposición policial. Se recuperó la mercancía.'
+      },
+      n_end_fail_hurto: {
+        type: 'end',
+        text: 'El uso excesivo de fuerza generó un incidente legal por lesiones. El sujeto fue detenido, pero la empresa enfrenta una demanda.'
+      },
+      // NODOS ESPECÍFICOS PARA MANEJO DE CRISIS PSIQUIÁTRICA (Añadido)
+      n_start_psiquiatrica: {
+        type: 'start',
+        text: 'Un individuo presenta descompensación psiquiátrica en el área de cajas, gritando y causando pánico. La prioridad es la seguridad de terceros y la desescalada. ¿Qué hace primero?',
+        choices: ['c_desescalada_verbal', 'c_contencion_fisica_rapida', 'c_aislamiento_zona', 'c_llamar_policia_medica']
+      },
+      n_end_ok_psiquiatrica: {
+        type: 'end',
+        text: 'Excelente manejo. La desescalada verbal y el aislamiento temporal permitieron la llegada de servicios de emergencia especializados, minimizando el riesgo para el cliente y terceros.'
+      },
+      n_end_fail_psiquiatrica: {
+        type: 'end',
+        text: 'El uso de la fuerza o la exposición al público escaló la crisis, resultando en lesiones o un daño grave a la imagen de la empresa. El manejo fue inadecuado.'
+      },
+      // NODOS PARA CORPORATIVO/OFICINAS
+      n_start_acceso: {
+        type: 'start',
+        text: 'El exempleado está visiblemente enojado y amenaza al personal. La prioridad es el personal. ¿Cómo procede con la contención?',
+        choices: ['c_desescalada_empatica', 'c_solicitar_policia', 'c_bloqueo_fisico']
+      },
+      n_dialogo: {
+        type: 'continue',
+        text: 'El diálogo ha fallado y el sujeto intenta pasar por la fuerza. La policía ya fue notificada, pero tardará 5 minutos. ¿Qué hace?',
+        choices: ['c_barrera_fisica', 'c_replegarse']
+      },
+      n_end_ok_acceso: {
+        type: 'end',
+        text: 'El sujeto fue contenido sin daño físico al personal ni a la propiedad. El protocolo de desescalada y la respuesta policial funcionaron.'
+      },
+      n_end_fail_acceso: {
+        type: 'end',
+        text: 'El sujeto logró acceder a áreas restringidas, causando daños a la propiedad y exponiendo información sensible.'
+      }
+    };
+
+    const CHOICES = {
+      // OPCIONES PARA ESPACIO PÚBLICO
+      c_intervencion_verbal: {
+        from: 'n_start',
+        to: 'n_verbal',
+        effects: {
+          procedural: 10,
+          empathy: 10,
+          time: 5
+        },
+        desc: 'Intervenir verbalmente para calmar y separar (priorizar desescalada)'
+      },
+      c_llamar_refuerzos: {
+        from: 'n_start',
+        to: 'n_verbal',
+        effects: {
+          comms: 10,
+          procedural: 5,
+          time: 10
+        },
+        desc: 'Llamar de inmediato a refuerzos de control de multitudes y pedir que se acerquen'
+      },
+      c_uso_fuerza: {
+        from: 'n_start',
+        to: 'n_end_fail',
+        effects: {
+          security: -10,
+          empathy: -15,
+          time: -5
+        },
+        desc: 'Usar la fuerza física para separarlos de inmediato (sin intentar desescalada)'
+      },
+      c_separar: {
+        from: 'n_verbal',
+        to: 'n_end_fail',
+        effects: {
+          security: -5,
+          procedural: -5
+        },
+        desc: 'Intentar separar a la fuerza con un solo agente (alto riesgo de lesión)'
+      },
+      c_aislar: {
+        from: 'n_verbal',
+        to: 'n_end_ok',
+        effects: {
+          security: 10,
+          empathy: 5
+        },
+        desc: 'Usar comunicación para que las partes en conflicto se retiren a un área segura para mediar.'
+      },
+      // OPCIONES PARA INDUSTRIAL/LOGÍSTICO
+      c_activar_alarma_panico: {
+        from: 'n_start_robo',
+        to: 'n_end_ok_robo',
+        effects: {
+          comms: 15,
+          security: 10
+        },
+        desc: 'Activar alarma silenciosa/pánico para alertar a central y policía'
+      },
+      c_comunicar_central: {
+        from: 'n_start_robo',
+        to: 'n_evaluar_riesgo',
+        effects: {
+          comms: 10,
+          procedural: 5
+        },
+        desc: 'Informar a la central de monitoreo con detalles de la situación y esperar instrucciones'
+      },
+      c_confrontar_directo: {
+        from: 'n_start_robo',
+        to: 'n_end_fail_robo',
+        effects: {
+          security: -20,
+          time: -10
+        },
+        desc: 'Intentar la confrontación directa e inmediata para detener el robo'
+      },
+      c_distraccion: {
+        from: 'n_evaluar_riesgo',
+        to: 'n_end_fail_robo',
+        effects: {
+          security: -15,
+          time: -5
+        },
+        desc: 'Intentar una distracción (ej. encender luces) para que se retiren, pero arriesgando su posición.'
+      },
+      c_mantener_posicion: {
+        from: 'n_evaluar_riesgo',
+        to: 'n_end_ok_robo',
+        effects: {
+          security: 10,
+          procedural: 10
+        },
+        desc: 'Mantener el ocultamiento, seguir informando la situación y esperar el apoyo policial.'
+      },
+      // OPCIONES PARA COMERCIAL/RETAIL (Hurto)
+      c_retener_fisico: {
+        from: 'n_start_hurto',
+        to: 'n_contencion',
+        effects: {
+          security: 5,
+          time: 5
+        },
+        desc: 'Utilizar una retención física controlada para impedir la huida.'
+      },
+      c_activar_alarma_interna: {
+        from: 'n_start_hurto',
+        to: 'n_end_ok_hurto',
+        effects: {
+          comms: 10
+        },
+        desc: 'Priorizar activar alarma para que otro personal (o policía) intercepte la salida.'
+      },
+      c_perseguir_exterior: {
+        from: 'n_start_hurto',
+        to: 'n_end_fail_hurto',
+        effects: {
+          security: -10
+        },
+        desc: 'Perseguir al sujeto fuera de la tienda (alto riesgo de abandono de puesto y confrontación en vía pública).'
+      },
+      c_control_articular: {
+        from: 'n_contencion',
+        to: 'n_end_ok_hurto',
+        effects: {
+          security: 15,
+          procedural: 10
+        },
+        desc: 'Aplicar técnica de control articular para inmovilizar con fuerza mínima.'
+      },
+      c_uso_bastón: {
+        from: 'n_contencion',
+        to: 'n_end_fail_hurto',
+        effects: {
+          security: -15,
+          empathy: -15
+        },
+        desc: 'Usar el bastón de servicio para forzar la detención (alto riesgo de escalamiento y lesión).'
+      },
+      // OPCIONES PARA CRISIS PSIQUIÁTRICA (Añadido)
+      c_desescalada_verbal: {
+        from: 'n_start_psiquiatrica',
+        to: 'n_end_ok_psiquiatrica',
+        effects: {
+          empathy: 20,
+          procedural: 10,
+          security: 5,
+          time: 5
+        },
+        desc: 'Iniciar diálogo de desescalada verbal con tono calmado y respetuoso, manteniendo la distancia de seguridad.'
+      },
+      c_contencion_fisica_rapida: {
+        from: 'n_start_psiquiatrica',
+        to: 'n_end_fail_psiquiatrica',
+        effects: {
+          security: -10,
+          empathy: -20,
+          time: -5
+        },
+        desc: 'Intentar la contención física inmediata sin apoyo (alto riesgo de agravar la crisis y lesiones).'
+      },
+      c_aislamiento_zona: {
+        from: 'n_start_psiquiatrica',
+        to: 'n_end_ok_psiquiatrica',
+        effects: {
+          security: 10,
+          comms: 5,
+          procedural: 5
+        },
+        desc: 'Establecer un perímetro de seguridad, alejar a clientes y contener el área.'
+      },
+      c_llamar_policia_medica: {
+        from: 'n_start_psiquiatrica',
+        to: 'n_end_ok_psiquiatrica',
+        effects: {
+          comms: 15,
+          procedural: 10
+        },
+        desc: 'Llamar a servicios de emergencia (SAMU/Policía) e indicar que se trata de una crisis de salud mental.'
+      },
+      // OPCIONES PARA CORPORATIVO/OFICINAS
+      c_desescalada_empatica: {
+        from: 'n_start_acceso',
+        to: 'n_dialogo',
+        effects: {
+          empathy: 10,
+          procedural: 5
+        },
+        desc: 'Intentar desescalada verbal, reconociendo su frustración y buscando un espacio seguro para hablar.'
+      },
+      c_solicitar_policia: {
+        from: 'n_start_acceso',
+        to: 'n_dialogo',
+        effects: {
+          comms: 15,
+          security: 5
+        },
+        desc: 'Solicitar apoyo policial de inmediato e informar a la gerencia.'
+      },
+      c_bloqueo_fisico: {
+        from: 'n_start_acceso',
+        to: 'n_end_fail_acceso',
+        effects: {
+          security: -10
+        },
+        desc: 'Bloquear físicamente la puerta de acceso sin intentar diálogo, escalando la tensión.'
+      },
+      c_barrera_fisica: {
+        from: 'n_dialogo',
+        to: 'n_end_ok_acceso',
+        effects: {
+          security: 15
+        },
+        desc: 'Crear una barrera física (ej. mostrador) para interponerse y ganar tiempo hasta la llegada de policía.'
+      },
+      c_replegarse: {
+        from: 'n_dialogo',
+        to: 'n_end_fail_acceso',
+        effects: {
+          security: -15
+        },
+        desc: 'Retirarse de la zona de acceso para evitar la confrontación (permite la entrada al sujeto).'
+      }
+    };
+    
+    // --- Lógica del Juego (Continuación) ---
+
     function selectArea(areaId) {
         gameState.currentArea = areaId;
         const scenarios = SCENARIOS[areaId];
@@ -1141,10 +1553,6 @@
         const selectedCard = document.querySelector(`.area-card[data-area="${areaId}"]`);
         if (selectedCard) {
             selectedCard.classList.add('selected');
-        } else {
-            // Manejar la selección si se carga un área que no está visible, por ejemplo, al cargar una sesión.
-            // Esto es crucial para áreas recién añadidas que podrían no tener un card visible inicialmente.
-            // En este caso, todas tienen un card, pero es un buen control de errores.
         }
 
         // Mostrar escenarios
@@ -1154,11 +1562,11 @@
                 const scenarioElement = document.createElement('div');
                 scenarioElement.className = 'scenario-card card';
                 scenarioElement.innerHTML = `
-                    <div>
-                        <h4 style="margin-bottom: 5px;">${scenario.title} <span class="difficulty-badge ${badgeClass}">${scenario.difficulty.toUpperCase()}</span></h4>
-                        <p style="font-size: 13px; color: var(--text-secondary);">Tiempo Estimado: ${scenario.est_time} min</p>
-                    </div>
-                    <button class="primary" data-scenario-id="${scenario.id}">Iniciar</button>
+                  <div>
+                    <h4 style="margin-bottom: 5px;">${scenario.title} <span class="difficulty-badge ${badgeClass}">${scenario.difficulty.toUpperCase()}</span></h4>
+                    <p style="font-size: 13px; color: var(--text-secondary);">Tiempo Estimado: ${scenario.est_time} min</p>
+                  </div>
+                  <button class="primary" data-scenario-id="${scenario.id}">Iniciar</button>
                 `;
                 scenarioElement.querySelector('button').addEventListener('click', () => startScenario(scenario.id));
                 list.appendChild(scenarioElement);
@@ -1176,7 +1584,6 @@
             showModal('Error', 'Debe seleccionar un área de desempeño primero.');
             return;
         }
-        
         const scenario = SCENARIOS[area].find(s => s.id === scenarioId);
         if (!scenario) {
             showModal('Error', 'Escenario no encontrado.');
@@ -1192,33 +1599,25 @@
         // 2. Actualizar UI y comenzar
         document.getElementById('scenario-title').textContent = scenario.title;
         document.getElementById('scenario-meta').innerHTML = `Área: ${scenario.area.toUpperCase()} | Dificultad: <span class="difficulty-badge difficulty-${scenario.difficulty}">${scenario.difficulty.toUpperCase()}</span> | Tiempo Estimado: ${scenario.est_time} min`;
-        
         updateDimensionsDisplay();
         updateTensionDisplay();
-        
         switchView('view-play');
         startTimer();
-        
+
         // 3. Cargar el primer nodo
         loadNode(scenario.start);
     }
-    
+
     function startRandomScenario() {
-        const areas = Object.keys(SCENARIOS);
+        const areas = Object.keys(SCENARIOS).filter(key => SCENARIOS[key].length > 0);
         if (areas.length === 0) {
             showModal('Error', 'No hay escenarios configurados.');
             return;
         }
-        
         // Seleccionar un área aleatoria
         const randomAreaId = areas[Math.floor(Math.random() * areas.length)];
         gameState.currentArea = randomAreaId;
-        
         const scenarios = SCENARIOS[randomAreaId];
-        if (!scenarios || scenarios.length === 0) {
-             showModal('Error', `El área ${randomAreaId} no tiene escenarios.`);
-             return;
-        }
         
         // Seleccionar un escenario aleatorio
         const randomScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
@@ -1227,22 +1626,21 @@
 
     function loadNode(nodeId) {
         const scenario = gameState.currentScenario;
-        if (!scenario) return;
-
-        const node = scenario.nodes[nodeId];
+        // Asumiendo que el escenario está definido globalmente o se puede inferir.
+        // Aquí usamos la estructura global NODES
+        const node = NODES[nodeId]; 
+        
         if (!node) {
-            showModal('Error de Configuración', `El nodo "${nodeId}" no existe en el escenario.`);
+            showModal('Error de Configuración', `El nodo "${nodeId}" no existe.`);
             return;
         }
-        
+
         gameState.currentNode = nodeId;
         gameState.nodeLoadTime = Date.now(); // Registrar el tiempo de carga del nodo
 
         // 1. Mostrar el contenido del nodo
         document.getElementById('node-text').textContent = node.text;
-        // Limpiar y (posiblemente) cargar media (no implementado en este simulador, solo se limpia)
-        document.getElementById('node-media').innerHTML = ''; 
-        
+
         // 2. Ocultar feedback
         document.getElementById('feedback-card').style.display = 'none';
 
@@ -1253,388 +1651,293 @@
         if (node.type === 'end') {
             stopTimer();
             const finalScore = calculatePartialScore();
-            
             // Generar mensaje final basado en la puntuación
-            let endMessage = '';
-            if (finalScore >= 80) {
-                endMessage = '¡Éxito Táctico! Demostraste un nivel de protocolo y control excepcional.';
-            } else if (finalScore >= 50) {
-                endMessage = 'Desempeño Aceptable. Hubo puntos críticos, pero la misión fue completada.';
-            } else {
-                endMessage = 'Falla Crítica. El procedimiento falló y el riesgo operacional aumentó.';
-            }
+            let endMessage = node.text; // Usar el texto de finalización del nodo
 
             // Un pequeño retraso para que el usuario lea el resultado del último nodo
-            setTimeout(() => showReport(finalScore, node.text || endMessage), 2000);
-            
+            setTimeout(() => showReport(finalScore, endMessage), 2000);
         } else {
             // Mostrar las opciones
             const nodeChoices = node.choices;
             if (nodeChoices && nodeChoices.length > 0) {
                 nodeChoices.forEach(choiceId => {
-                    const choice = scenario.choices[choiceId];
-                    if (choice) {
+                    const choice = CHOICES[choiceId];
+                    if (choice && choice.from === nodeId) { // Verificar que la opción es válida para este nodo
                         const choiceElement = document.createElement('div');
                         choiceElement.className = 'choice-btn';
                         choiceElement.setAttribute('tabindex', '0');
                         choiceElement.innerHTML = `
-                            <div class="choice-title">Acción: ${choice.desc}</div>
-                            <div class="choice-effects">
-                                ${DIMENSIONS.map(dim => {
-                                    const effect = choice.effects[dim] || 0;
-                                    if (effect !== 0) {
-                                        const sign = effect > 0 ? '+' : '';
-                                        const colorClass = effect > 0 ? 'effect-positive' : 'effect-negative';
-                                        return `<span class="effect-tag ${colorClass}">${sign}${effect} ${dim.charAt(0).toUpperCase() + dim.slice(1)}</span>`;
-                                    }
-                                    return '';
-                                }).join('')}
-                                <span class="effect-tag">Tiempo: ${choice.from.startsWith('n_') ? 'Variable' : 'N/A'}</span>
-                            </div>
+                          <div class="choice-title">Acción: ${choice.desc}</div>
+                          <div class="choice-effects">
+                            ${DIMENSIONS.map(dim => {
+                                const effect = choice.effects[dim] || 0;
+                                if (effect !== 0) {
+                                    const sign = effect > 0 ? '+' : '';
+                                    const colorClass = effect > 0 ? 'effect-positive' : 'effect-negative';
+                                    return `<span class="effect-tag ${colorClass}">${sign}${effect} ${dim.charAt(0).toUpperCase() + dim.slice(1)}</span>`;
+                                }
+                                return '';
+                            }).join('')}
+                            <span class="effect-tag">Tiempo: Variable</span>
+                          </div>
                         `;
                         choiceElement.addEventListener('click', () => handleChoice(choiceId));
                         choicesDiv.appendChild(choiceElement);
                     }
                 });
             } else {
-                choicesDiv.innerHTML = '<p style="color: var(--danger);">Error: No hay opciones disponibles para este nodo. (Fin inesperado)</p>';
+                choicesDiv.innerHTML = '<p style="color: var(--danger);">Error: No hay opciones disponibles para este nodo.</p>';
             }
         }
-    }
-    
-    // Función para analizar el tiempo de reacción (Tiempo de Decisión)
-    function analyzeReactionTime() {
-        if (!gameState.nodeLoadTime) return {timeScore: 0, info: ''};
-
-        const reactionTime = Date.now() - gameState.nodeLoadTime;
-        let scoreChange = 0;
-        let info = `Decisión en ${Math.floor(reactionTime / 1000)}s.`;
-
-        if (reactionTime > MAX_REACTION_TIME) {
-            scoreChange = -5;
-            info += ' | ⚠️ **VACILACIÓN:** Demora en la toma de decisión.';
-        } else if (reactionTime < MIN_REACTION_TIME) {
-            scoreChange = -5;
-            info += ' | 🚨 **IMPULSIVIDAD:** Decisión demasiado rápida.';
-        } else {
-            scoreChange = 5;
-            info += ' | ✅ **REACCIÓN ÓPTIMA:** Tiempo de respuesta adecuado.';
-        }
-        
-        // Sumar al score de tiempo
-        gameState.dimensions.time = Math.max(-20, gameState.dimensions.time + scoreChange);
-
-        return {timeScore: scoreChange, info: info, reactionTime: reactionTime};
-    }
-    
-    // Función para simular el análisis facial (Biometría)
-    function analyzeFaceExpression(tensionChange) {
-        let bioFeedback = '';
-        let tensionModifier = 0; // Modificador adicional a la tensión por el análisis facial
-        
-        if (gameState.faceAnalysisActive) {
-             // Simulación de detección: si la tensión base está aumentando mucho, o el agente tiene baja empatía, 
-             // o tiene bajo procedimiento, simular una expresión negativa
-             const proceduralCheck = gameState.dimensions.procedural < -5;
-             const empathyCheck = gameState.dimensions.empathy < 0;
-             const highTensionBase = tensionChange > 5;
-
-             if (highTensionBase || proceduralCheck || empathyCheck) {
-                // Simular Detección de Estrés / Enojo / Miedo
-                tensionModifier = 10; // Aumentar la tensión percibida
-                // Penalizar Procedimiento por "Falla de Calma"
-                gameState.dimensions.procedural = Math.max(-20, gameState.dimensions.procedural - 5); 
-                bioFeedback += `<br><span style="color: var(--danger);">🔥 **ESTRÉS DETECTADO:** Tensión (+10) y Procedimiento (-5) penalizados por microexpresiones de ${highTensionBase ? 'Ansiedad' : proceduralCheck ? 'Frustración' : 'Enojo'}.</span>`;
-             } else {
-                // Simular Calma y Control
-                tensionModifier = -5; // Reducir la tensión percibida
-                bioFeedback += `<br><span style="color: var(--success);">🧊 **CONTROL TÁCTICO:** Expresión facial estable. Tensión (-5).</span>`;
-             }
-        } else {
-             bioFeedback += `<br><span style="color: var(--warning);">👁️ **NEUTRALIDAD:** Expresión facial estable.</span>`;
-        }
-        
-        return {tensionModifier: tensionModifier, bioFeedback: bioFeedback};
     }
 
     function handleChoice(choiceId) {
-        const scenario = gameState.currentScenario;
-        const choice = scenario.choices[choiceId];
+        const choice = CHOICES[choiceId];
         if (!choice) return;
 
-        // 1. Analizar el tiempo de reacción
-        const { timeScore, info: reactionInfo, reactionTime } = analyzeReactionTime();
-        
-        // 2. Determinar el cambio de tensión base (mayor seguridad, menor tensión; mayor empatía, menor tensión)
-        // Valores por defecto para el cambio de tensión (simulación)
-        const baseTensionChange = (choice.effects.security || 0) * -2 + // Mucho efecto en Seguridad -> Gran baja en Tensión (-2 por punto)
-                                  (choice.effects.empathy || 0) * -1.5 + // Mucho efecto en Empatía -> Baja moderada en Tensión (-1.5 por punto)
-                                  (choice.effects.procedural || 0) * -1 + // Procedimiento -> Baja leve (-1 por punto)
-                                  (choice.effects.comms || 0) * -1; // Comunicaciones -> Baja leve (-1 por punto)
-        
-        // Las malas decisiones aumentan la tensión
-        let tensionChange = baseTensionChange;
-        
-        // Penalización por impulsividad/vacilación. Aumenta la tensión.
-        if (timeScore < 0) { 
-            tensionChange += 5; 
+        const reactionTime = Date.now() - gameState.nodeLoadTime;
+        let timePenalty = 0;
+        let reactionFeedback = '';
+        const currentTension = gameState.tensionLevel;
+
+        // 1. Cálculo de Penalización/Bono por Tiempo
+        if (reactionTime > MAX_REACTION_TIME) {
+            timePenalty = -10;
+            reactionFeedback = '<strong>🔴 Vacilación Crítica:</strong> Tomó demasiado tiempo para reaccionar. La situación se deteriora.';
+        } else if (reactionTime < MIN_REACTION_TIME) {
+            timePenalty = -5;
+            reactionFeedback = '<strong>⚠️ Impulsividad:</strong> Reacción demasiado rápida. El riesgo de errores de procedimiento aumenta.';
+        } else {
+            timePenalty = 5;
+            reactionFeedback = '<strong>✅ Reacción Óptima:</strong> La respuesta fue oportuna y bien medida.';
         }
-
-        // 3. Analizar Expresión Facial (Biometría) si está activo
-        const { tensionModifier: bioTensionModifier, bioFeedback } = analyzeFaceExpression(tensionChange);
-        tensionChange += bioTensionModifier;
-
-        // 4. Aplicar Tensión Final
-        gameState.tensionLevel = Math.min(100, Math.max(0, gameState.tensionLevel + tensionChange));
-        updateTensionDisplay();
-
-        // 5. Penalización/Bonificación por Tensión al Momento de la Decisión
-        let tensionScoreModifier = 0;
-        if (gameState.faceAnalysisActive && gameState.tensionLevel > 80) {
-            tensionScoreModifier = -2; // Penalización por actuar bajo extremo estrés
-            bioFeedback += `<br><span style="color: var(--danger);">🚨 **FALLA POR ESTRÉS:** Tensión extrema (>80). Se penalizan 2pts. en **Procedimiento**.</span>`;
-            gameState.dimensions.procedural = Math.max(-20, gameState.dimensions.procedural + tensionScoreModifier);
-        }
-
-        // 6. Aplicar efectos de la elección a dimensiones
-        let totalEffect = 0;
+        
+        // 2. Aplicar el efecto de la elección
         DIMENSIONS.forEach(dim => {
             const effect = choice.effects[dim] || 0;
-            // La dimensión 'time' ya fue modificada por analyzeReactionTime
-            // La dimensión 'procedural' ya fue modificada por tensionScoreModifier si aplica
-            if (dim !== 'time' && dim !== 'procedural') {
-                gameState.dimensions[dim] = Math.max(-20, gameState.dimensions[dim] + effect); // Asegurar score mínimo
-            } else if (dim === 'procedural') { 
-                // Si es procedural, ya fue modificado por tensionScoreModifier. Sumamos el efecto base.
-                gameState.dimensions[dim] = Math.max(-20, gameState.dimensions.procedural + effect); 
-            }
-            totalEffect += effect;
+            gameState.dimensions[dim] = Math.max(0, gameState.dimensions[dim] + effect);
         });
-        
-        // Sumar la penalización por estrés al total de efectos para el log
-        totalEffect += tensionScoreModifier;
 
-        // 7. Log de acción
+        // 3. Ajustar la dimensión 'Time' y Tensión
+        gameState.dimensions['time'] = Math.max(0, gameState.dimensions['time'] + timePenalty);
+        
+        // La tensión se ajusta por la seguridad (negativa) y la empatía (positiva)
+        let tensionChange = -(choice.effects.security || 0) + (choice.effects.empathy || 0); 
+        gameState.tensionLevel = Math.max(0, gameState.tensionLevel + tensionChange);
+
+
+        // 4. Registrar la acción
         gameState.actions.push({
-            node: gameState.currentNode,
-            choice: choice.desc,
+            nodeId: gameState.currentNode,
+            choiceDesc: choice.desc,
             effects: choice.effects,
-            scoreChange: totalEffect + timeScore + (choice.effects.time || 0), // Sumar los efectos de dimensión del choice + el score de tiempo (que ya fue aplicado a dimensions.time) + la penalización por estrés (tensionScoreModifier, que ya fue aplicado a dimensions.procedural)
-            timeTaken: Math.floor(reactionTime / 1000),
-            reactionInfo: reactionInfo,
-            tension: gameState.tensionLevel,
-            tensionChange: tensionChange,
-            tensionPenalty: tensionScoreModifier,
-            // Registrar cambio de tensión solo por la biometría (para el feedback)
-            bioTensionChange: bioTensionModifier,
+            time: reactionTime / 1000, // segundos
+            feedback: reactionFeedback
         });
 
-        // 8. Mostrar feedback inmediato
-        let feedback = `**Decisión:** ${choice.desc}`;
-        feedback += `<br>**Efecto Neto Dimensiones:** ${totalEffect >= 0 ? '+' : ''}${totalEffect} puntos.`;
-        feedback += `<br>${reactionInfo}. **Ajuste de Tiempo:** ${timeScore >= 0 ? '+' : ''}${timeScore} puntos.`;
-        feedback += bioFeedback;
-        
-        // Retroalimentación de Tensión
-        const baseTensionChangeLogged = baseTensionChange + (timeScore < 0 ? 5 : 0) + (choice.effects.security || 0) * -2 + (choice.effects.empathy || 0) * -1.5 + (choice.effects.procedural || 0) * -1 + (choice.effects.comms || 0) * -1; // Ajuste para el log, no usar la variable tensionChange que incluye biometría.
+        // 5. Mostrar Feedback Inmediato
+        showFeedback(choice, reactionFeedback);
 
-        if (tensionChange > 10) {
-            feedback += `<br><span style="color: var(--danger);">⚡ **ALERTA DE ESTRÉS:** Tu acción y/o tensión biológica aumentó la Tensión Operacional en ${Math.round(tensionChange)} puntos.</span>`;
-        } else if (tensionChange < -5) {
-            feedback += `<br><span style="color: var(--success);">🧘 **CONTROL TÁCTICO:** Tu acción y/o calma mental redujo la Tensión Operacional en ${Math.round(tensionChange * -1)} puntos.</span>`;
-        }
-
-        document.getElementById('immediate-feedback').innerHTML = feedback;
-
-        const feedbackCard = document.getElementById('feedback-card');
-        feedbackCard.classList.remove('warning');
-        if (totalEffect < 0 || tensionChange > 0 || reactionTime < MIN_REACTION_TIME || reactionTime > MAX_REACTION_TIME) {
-            feedbackCard.classList.add('warning');
-            feedbackCard.style.borderLeftColor = 'var(--danger)';
-        } else {
-            feedbackCard.style.borderLeftColor = 'var(--success)';
-        }
-        feedbackCard.style.display = 'block';
-
+        // 6. Actualizar UI
         updateDimensionsDisplay();
+        updateTensionDisplay();
 
-        // Cargar el siguiente nodo
-        if (choice.to) {
-            loadNode(choice.to);
+        // 7. Cargar el siguiente nodo
+        loadNode(choice.to);
+    }
+
+    function showFeedback(choice, reactionFeedback) {
+        const feedbackCard = document.getElementById('feedback-card');
+        const feedbackContent = document.getElementById('immediate-feedback');
+        
+        // Determinar si el feedback es positivo o negativo para el color de la tarjeta
+        const totalEffect = DIMENSIONS.reduce((sum, dim) => sum + (choice.effects[dim] || 0), 0) + (choice.effects.time || 0);
+        
+        if (totalEffect < 0 || gameState.dimensions.security < 5) {
+            feedbackCard.classList.add('warning');
         } else {
-            // Error en la configuración del escenario
-            showModal('Error Crítico', `Configuración de escenario incompleta en la opción: ${choice.desc}`);
-            // Recargar el nodo actual para evitar un loop
-            loadNode(gameState.currentNode); 
+            feedbackCard.classList.remove('warning');
         }
+
+        feedbackContent.innerHTML = `
+          <p style="font-size: 15px; margin-bottom: 10px;"><strong>Acción:</strong> ${choice.desc}</p>
+          <p style="font-size: 14px; margin-bottom: 10px;">${reactionFeedback}</p>
+          <div class="choice-effects">
+            ${DIMENSIONS.map(dim => {
+                const effect = choice.effects[dim] || 0;
+                if (effect !== 0) {
+                    const sign = effect > 0 ? '🔺' : '🔻';
+                    const color = effect > 0 ? 'var(--success)' : 'var(--danger)';
+                    return `<span style="color: ${color}; font-weight: 600;">${sign} ${Math.abs(effect)} ${dim.charAt(0).toUpperCase() + dim.slice(1)}</span>`;
+                }
+                return '';
+            }).join('<span style="color: var(--text-secondary);"> | </span>')}
+          </div>
+        `;
+        feedbackCard.style.display = 'block';
     }
 
     function showReport(finalScore, endMessage) {
+        switchView('view-report');
+        
         document.getElementById('final-score').textContent = `${finalScore}%`;
-        document.querySelector('.report-header .subtitle').textContent = endMessage;
+        
+        let subtitle = 'Desempeño Aceptable. Hubo puntos críticos, pero la misión fue completada.';
+        if (finalScore >= 80) {
+            subtitle = '¡Éxito Táctico! Demostraste un nivel de protocolo y control excepcional.';
+        } else if (finalScore < 50) {
+            subtitle = 'Falla Crítica. El procedimiento falló y el riesgo operacional aumentó. Se requiere reentrenamiento.';
+        }
+        document.querySelector('.report-header .subtitle').textContent = subtitle;
 
-        // Dimensiones
+        // Sección de Retroalimentación
+        document.getElementById('report-feedback').innerHTML = `
+            <p style="color: var(--text-primary); font-size: 16px;"><strong>Conclusión del Escenario:</strong> ${endMessage}</p>
+            <p style="margin-top: 15px; color: var(--text-secondary);">El análisis detallado de sus acciones se encuentra a continuación. Preste especial atención a las dimensiones con puntuaciones más bajas.</p>
+        `;
+
+
+        // Sección de Dimensiones
         const reportDimensions = document.getElementById('report-dimensions');
         reportDimensions.innerHTML = DIMENSIONS.map(dim => {
             const value = gameState.dimensions[dim];
-            const color = value >= 10 ? 'var(--success)' : value >= 0 ? 'var(--warning)' : 'var(--danger)';
-            const label = dim.charAt(0).toUpperCase() + dim.slice(1);
-            return `<div class="dimension-item">
-                <span class="dimension-label">${label}</span>
-                <span class="dimension-value" style="color: ${color};">${value}</span>
-            </div>`;
+            const maxVal = 20; // Max points
+            const percentage = Math.round((value / maxVal) * 100);
+            
+            let color = 'var(--success)';
+            if (percentage < 50) color = 'var(--danger)';
+            else if (percentage < 75) color = 'var(--warning)';
+
+            return `
+              <div class="dimension-item">
+                <span class="dimension-label">${dim.charAt(0).toUpperCase() + dim.slice(1)} (${percentage}%)</span>
+                <span class="dimension-value" style="color: ${color};">${value}/${maxVal}</span>
+              </div>
+            `;
         }).join('');
 
-        // Acciones
+        // Sección de Acciones
         const reportActions = document.getElementById('report-actions');
-        reportActions.innerHTML = gameState.actions.map(action => {
-            const time = action.timeTaken;
-            const tensionInfo = action.tensionChange !== undefined ? ` | Tensión: ${Math.round(action.tension)} (${action.tensionChange >= 0 ? '+' : ''}${Math.round(action.tensionChange)})` : '';
-            const tensionPenalty = action.tensionPenalty < 0 ? ` (Penalización por Estrés: ${action.tensionPenalty})` : '';
-            const reactionInfo = action.reactionInfo ? action.reactionInfo.split(' | ')[1] : 'N/A';
-            const bioTension = action.bioTensionChange !== undefined ? ` | BioTensión: ${action.bioTensionChange >= 0 ? '+' : ''}${action.bioTensionChange}` : '';
+        reportActions.innerHTML = gameState.actions.map((action, index) => {
+            const effectsHTML = DIMENSIONS.map(dim => {
+                const effect = action.effects[dim] || 0;
+                if (effect !== 0) {
+                    const sign = effect > 0 ? '+' : '';
+                    const color = effect > 0 ? 'var(--success)' : 'var(--danger)';
+                    return `<span style="color: ${color};">${sign}${effect} ${dim}</span>`;
+                }
+                return '';
+            }).join(' | ');
 
-            // Clasificar por éxito/falla
-            const borderClass = action.scoreChange > 0 ? 'var(--success)' : action.scoreChange < 0 ? 'var(--danger)' : 'var(--warning)';
-
-            return `<div class="action-item" style="border-left-color: ${borderClass};">
-                <p style="font-weight: 600;">${action.choice} <span style="font-size: 14px; color: ${borderClass};">${action.scoreChange >= 0 ? '+' : ''}${action.scoreChange} pts${tensionPenalty}</span></p>
-                <small style="color: var(--text-secondary);">Tiempo: ${time}s | Reacción: ${reactionInfo}${bioTension}${tensionInfo} | Nodo: ${action.node}</small>
-            </div>`;
+            return `
+              <div class="action-item">
+                <p style="font-weight: 600;">Paso ${index + 1}: ${action.choiceDesc}</p>
+                <p style="font-size: 13px; color: var(--text-secondary);">Tiempo de Reacción: ${action.time.toFixed(2)}s. ${action.feedback}</p>
+                <p style="font-size: 13px; margin-top: 5px;">Efectos: ${effectsHTML}</p>
+              </div>
+            `;
         }).join('');
 
-        // Retroalimentación (simplificada por ahora)
-        const reportFeedback = document.getElementById('report-feedback');
-        let overallFeedback = '';
-        const finalTension = gameState.actions.length > 0 ? gameState.actions[gameState.actions.length - 1].tension : 0;
-
-        if (finalScore >= 80) {
-            overallFeedback = `<p style="color: var(--success);">**Análisis de Élite:** Rendimiento excepcional. Protocolos seguidos con rigurosidad y excelente control de la situación (Tensión final: ${Math.round(finalTension)}). Su tiempo de reacción fue decisivo.</p>`;
-        } else if (finalScore >= 50) {
-            overallFeedback = `<p style="color: var(--warning);">**Análisis Estándar:** Desempeño aceptable, pero hubo momentos de riesgo táctico, vacilación o impulsividad (revisar tiempos de reacción). Revise las acciones con puntuación negativa.</p>`;
-        } else {
-            overallFeedback = `<p style="color: var(--danger);">**Análisis Crítico:** Falla operacional. Se requiere reentrenamiento. La falta de procedimiento, el alto nivel de tensión y la mala gestión del tiempo incrementaron el peligro.</p>`;
-        }
-
-        if (gameState.faceAnalysisActive) {
-            overallFeedback += '<p style="margin-top: 15px; color: var(--accent);">**Módulo de Biometría Activo:** La fluctuación en su puntuación refleja su **falta de control emocional** en los momentos de alta presión. Entrene su calma bajo fuego.</p>';
-        }
-
-        reportFeedback.innerHTML = overallFeedback;
-
-        switchView('view-report');
+        // Manejadores de Botones
+        document.getElementById('btn-replay').onclick = () => {
+            selectArea(gameState.currentArea); // Vuelve a la selección de escenarios de esa área
+            // También se podría hacer: startScenario(gameState.currentScenario.id);
+        };
+        document.getElementById('btn-export-json').onclick = exportReport;
+        document.getElementById('btn-print').onclick = printReport;
     }
 
-    // --- Inicialización y Funcionalidad de Botones ---
-
-    // Funcionalidades de persistencia (Guardar/Cargar/Contador)
-    function saveSession() {
-        const userName = document.getElementById('user-name').value;
-        if (!userName) {
-            alert("Por favor, ingresa tu Nombre para guardar la sesión.");
-            return;
-        }
-
-        const sessionData = {
-            name: userName,
-            rut: document.getElementById('user-rut').value,
-            facility: document.getElementById('user-facility').value,
-            // Guardamos el estado actual, dimensiones y tensión
-            gameState: JSON.stringify({
-                dimensions: gameState.dimensions,
-                tensionLevel: gameState.tensionLevel,
-                actions: gameState.actions,
-                currentArea: gameState.currentArea,
-                currentScenarioId: gameState.currentScenario ? gameState.currentScenario.id : null,
-                currentNode: gameState.currentNode,
-                faceAnalysisActive: gameState.faceAnalysisActive
-            }),
-            timestamp: new Date().toISOString()
+    function resetGame() {
+        if (gameState.timerInterval) stopTimer();
+        gameState = {
+          currentArea: null,
+          currentScenario: null,
+          currentNode: null,
+          dimensions: {procedural: 0, security: 0, comms: 0, time: 0, empathy: 0},
+          actions: [],
+          startTime: null,
+          timerInterval: null,
+          score: 0,
+          tensionLevel: 0,
+          nodeLoadTime: 0,
+          faceAnalysisActive: gameState.faceAnalysisActive // Mantiene el estado de la biometría
         };
+        updateDimensionsDisplay();
+        updateTensionDisplay();
+        switchView('view-area');
+        document.querySelectorAll('.area-card').forEach(card => card.classList.remove('selected'));
+        document.getElementById('scenarios-container').style.display = 'none';
+        
+        if (gameState.faceAnalysisActive) {
+            toggleFaceAnalysis(); // Desactiva la biometría al resetear
+        }
+        
+        showModal('♻️ Sistema Reiniciado', 'El simulador ha sido reseteado. Por favor, seleccione un área de desempeño para comenzar.');
+    }
 
+
+    // --- Utilidades de Guardado/Carga y Exportación ---
+    function saveSession() {
+        const sessionName = document.getElementById('user-name').value || 'Sesión Anónima';
+        const sessionData = {
+            state: gameState,
+            userData: {
+                name: document.getElementById('user-name').value,
+                rut: document.getElementById('user-rut').value,
+                facility: document.getElementById('user-facility').value,
+            },
+            timestamp: new Date().toLocaleString()
+        };
         try {
-            localStorage.setItem(`session_${userName.replace(/\s/g, '_')}`, JSON.stringify(sessionData));
+            localStorage.setItem(`session_${sessionName}`, JSON.stringify(sessionData));
             updateSessionCount();
-            showModal('💾 Sesión Guardada', `El progreso de **${userName}** ha sido guardado con éxito.`);
+            showModal('💾 Sesión Guardada', `La sesión fue guardada con éxito como: <strong>${sessionName}</strong>.`);
         } catch (e) {
-            console.error('Error al guardar la sesión:', e);
-            showModal('Error', 'No se pudo guardar la sesión (puede que el navegador no lo permita o el espacio esté lleno).');
+            showModal('❌ Error de Guardado', 'No se pudo guardar la sesión en el navegador.');
         }
     }
 
     function loadSession() {
-        const userName = document.getElementById('user-name').value;
-        if (!userName) {
-            alert("Por favor, ingresa el Nombre de la sesión a cargar.");
+        const sessionName = document.getElementById('user-name').value;
+        if (!sessionName) {
+            showModal('⚠️ Nombre Requerido', 'Por favor, ingrese el nombre exacto de la sesión a cargar.');
             return;
         }
 
-        try {
-            const savedData = localStorage.getItem(`session_${userName.replace(/\s/g, '_')}`);
-            if (!savedData) {
-                showModal('Error de Carga', `No se encontró una sesión guardada para **${userName}**.`);
-                return;
-            }
-
-            const sessionData = JSON.parse(savedData);
-            
-            // Cargar datos del usuario
-            document.getElementById('user-rut').value = sessionData.rut || '';
-            document.getElementById('user-facility').value = sessionData.facility || '';
-
-            // Cargar estado del juego
-            const loadedState = JSON.parse(sessionData.gameState);
-            
-            // Cargar estado de dimensiones y tensión
-            gameState.dimensions = loadedState.dimensions || {procedural: 0, security: 0, comms: 0, time: 0, empathy: 0};
-            gameState.tensionLevel = loadedState.tensionLevel || 0;
-            gameState.actions = loadedState.actions || [];
-            gameState.faceAnalysisActive = loadedState.faceAnalysisActive || false;
-            gameState.currentArea = loadedState.currentArea || null; // Cargar el área
-
-            updateDimensionsDisplay();
-            updateTensionDisplay();
-
-            // Actualizar botón de biometría
-            const btn = document.getElementById('btn-face-analysis');
-            const module = document.getElementById('face-analysis-module');
-            if (gameState.faceAnalysisActive) {
-                // Simular la activación visual sin obtener el stream real
-                btn.classList.add('active');
-                btn.textContent = '👁️ Biometría (Cargada)';
-                module.style.display = 'flex';
-                module.classList.add('active');
-                document.getElementById('face-status').textContent = 'Análisis de Tensión ON (Cargado)';
-            } else {
-                btn.classList.remove('active');
-                btn.textContent = '👁️ Biometría Facial';
-                module.style.display = 'none';
-                module.classList.remove('active');
-            }
-
-            // Intentar reanudar el escenario si existe
-            if (loadedState.currentScenarioId) {
-                const areaId = gameState.currentArea || Object.keys(SCENARIOS).find(a => SCENARIOS[a].find(s => s.id === loadedState.currentScenarioId)) || 'comercial';
+        const sessionDataString = localStorage.getItem(`session_${sessionName}`);
+        if (sessionDataString) {
+            try {
+                const sessionData = JSON.parse(sessionDataString);
+                gameState = sessionData.state;
                 
-                selectArea(areaId); // Asegurar que el área esté seleccionada para que exista currentScenario
-                const scenario = SCENARIOS[areaId].find(s => s.id === loadedState.currentScenarioId);
+                // Cargar datos de usuario
+                document.getElementById('user-name').value = sessionData.userData.name;
+                document.getElementById('user-rut').value = sessionData.userData.rut;
+                document.getElementById('user-facility').value = sessionData.userData.facility;
 
-                if (scenario) {
-                    // Reiniciar el escenario pero cargar el nodo guardado
-                    startScenario(scenario.id); 
-                    loadNode(loadedState.currentNode);
-                    stopTimer(); // El tiempo debe ser reanudado por el usuario o manejado de forma más compleja. Por simplicidad, se detiene.
-                    showModal('📂 Sesión Cargada', `Progreso de sesión de **${userName}** cargado. Escenario reanudado en el nodo **${loadedState.currentNode}**.`);
-                    return;
+                // Reanudar el juego si está en medio de un escenario
+                if (gameState.currentScenario && gameState.currentNode) {
+                    // Simular inicio para cargar la UI
+                    selectArea(gameState.currentArea); 
+                    startScenario(gameState.currentScenario.id); 
+                    loadNode(gameState.currentNode); // Cargar el nodo específico
+                    startTimer(); // Reiniciar el temporizador
+                    switchView('view-play');
+                } else {
+                    selectArea(gameState.currentArea);
+                    switchView('view-area');
                 }
-            }
-            
-            // Si solo se cargaron datos de usuario/dimensiones sin escenario activo
-            showModal('📂 Sesión Cargada', `Datos de usuario y dimensiones cargados para **${userName}**. Inicia un nuevo escenario.`);
+                
+                updateDimensionsDisplay();
+                updateTensionDisplay();
 
-        } catch (e) {
-            console.error('El estado del juego guardado está corrupto o no se pudo cargar:', e);
-            showModal('Error Crítico', 'El estado del juego guardado está corrupto. Intente reiniciar o usar otra sesión.');
+                showModal('📂 Sesión Cargada', `Sesión <strong>${sessionName}</strong> cargada con éxito. Reanudada desde el nodo <strong>${gameState.currentNode}</strong>.`);
+
+            } catch (e) {
+                showModal('❌ Error de Carga', 'El archivo de sesión está corrupto o no es válido.');
+            }
+        } else {
+            showModal('❌ Sesión No Encontrada', `No se encontró ninguna sesión guardada con el nombre: <strong>${sessionName}</strong>.`);
         }
     }
 
@@ -1642,206 +1945,123 @@
         let count = 0;
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && key.startsWith('session_')) {
+            if (key.startsWith('session_')) {
                 count++;
             }
         }
         document.getElementById('sessions-count').textContent = count;
     }
 
-    function init() {
-        // 1. Asignar eventos a las tarjetas de área
-        document.querySelectorAll('.area-card').forEach(card => {
-            card.addEventListener('click', () => {
-                selectArea(card.getAttribute('data-area'));
-            });
-            card.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                    selectArea(card.getAttribute('data-area'));
-                }
-            });
-        });
-
-        // 2. Funcionalidad de Botones de Control (Header/Reporte)
-        document.getElementById('btn-reset').addEventListener('click', () => {
-            if (confirm('¿Está seguro que desea resetear el simulador y perder el progreso actual?')) {
-                localStorage.clear();
-                window.location.reload();
-            }
-        });
-
-        document.getElementById('btn-replay').addEventListener('click', () => {
-            if (gameState.currentScenario) {
-                startScenario(gameState.currentScenario.id);
-            } else {
-                switchView('view-area');
-            }
-        });
-
-        // 3. Funcionalidad de Botones de Control (Simulaciones)
-        document.getElementById('btn-tts').addEventListener('click', () => {
-            showModal('🔊 Módulo de Voz', 'Simulación: La funcionalidad de **Texto a Voz (TTS)** ha sido activada para la lectura de escenarios y alternativas. Desactivar para operar en silencio táctico.');
-        });
-
-        // **NUEVO:** Botón de Biometría
-        document.getElementById('btn-face-analysis').addEventListener('click', toggleFaceAnalysis);
-
-        document.getElementById('btn-admin').addEventListener('click', () => {
-            const adminPanel = document.getElementById('admin-panel');
-            if (adminPanel.style.display === 'none') {
-                adminPanel.style.display = 'block';
-                showModal('⚙️ Panel de Administración', 'Acceso a la configuración. Se recomienda cautela al modificar los parámetros JSON.');
-            } else {
-                adminPanel.style.display = 'none';
-            }
-        });
-
-        // 4. Funcionalidad de Guardar/Cargar/Aleatorio
-        document.getElementById('btn-save-session').addEventListener('click', saveSession);
-        document.getElementById('btn-load-session').addEventListener('click', loadSession);
-        document.getElementById('btn-random').addEventListener('click', startRandomScenario);
-        updateSessionCount(); // Contar sesiones guardadas al inicio
-
-        // 5. Funcionalidad de Admin (Cargar/Exportar JSON de Escenarios)
-        document.getElementById('btn-load-json').addEventListener('click', () => {
-            const jsonText = document.getElementById('admin-json').value;
-            try {
-                const newScenarios = JSON.parse(jsonText);
-                // Simple validación: debe ser un objeto
-                if (typeof newScenarios !== 'object' || newScenarios === null) {
-                    throw new Error('El JSON cargado no es un objeto de escenarios válido.');
-                }
-                
-                // Sobrescribir o fusionar escenarios (Aquí optamos por sobrescribir si la clave existe)
-                SCENARIOS = {...SCENARIOS, ...newScenarios};
-                showModal('✅ Escenarios Cargados', `Se han cargado ${Object.keys(newScenarios).length} grupos de escenarios. Recarga la vista de áreas para verlos.`);
-            } catch (e) {
-                showModal('Error de JSON', `Fallo al cargar el JSON: ${e.message}`);
-            }
-        });
-
-        document.getElementById('btn-export-json-admin').addEventListener('click', () => {
-            const jsonStr = JSON.stringify(SCENARIOS, null, 2);
-            document.getElementById('admin-json').value = jsonStr;
-            showModal('JSON Exportado', 'El JSON de todos los escenarios se ha copiado al área de texto para su exportación.');
-        });
-
-
-        // 6. Funcionalidad de Impresión de Reporte
-        document.getElementById('btn-print').addEventListener('click', () => {
-            alert('Simulación de impresión: Se abriría la ventana de impresión para el reporte.');
-            // Implementación real:
-            // window.print();
-        });
-        
-        // 7. Funcionalidad de Exportar Reporte JSON
-        document.getElementById('btn-export-json').addEventListener('click', () => {
-            const reportData = {
-                userName: document.getElementById('user-name').value,
+    function exportReport() {
+        const reportData = {
+            report_title: `Reporte Táctico: ${gameState.currentScenario.title}`,
+            user_data: {
+                name: document.getElementById('user-name').value,
                 rut: document.getElementById('user-rut').value,
                 facility: document.getElementById('user-facility').value,
-                scenario: gameState.currentScenario.title,
-                finalScore: calculatePartialScore(),
+            },
+            scenario: {
+                area: gameState.currentArea,
+                title: gameState.currentScenario.title,
+                difficulty: gameState.currentScenario.difficulty,
+                total_time: document.getElementById('timer-value').textContent,
+            },
+            results: {
+                final_score: document.getElementById('final-score').textContent,
                 dimensions: gameState.dimensions,
-                actionsLog: gameState.actions,
-                timestamp: new Date().toISOString()
-            };
-            
-            const jsonStr = JSON.stringify(reportData, null, 2);
-            const blob = new Blob([jsonStr], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Reporte_${gameState.currentScenario.id}_${new Date().getTime()}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        });
+                actions_taken: gameState.actions,
+                final_message: document.getElementById('report-feedback').querySelector('strong').textContent
+            }
+        };
 
-
-        // 8. Establecer vista inicial
-        switchView('view-area');
+        const jsonString = JSON.stringify(reportData, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Reporte_Tactico_${gameState.currentScenario.id}_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
+    function printReport() {
+        // Simple print function for the report view
+        const printContent = document.getElementById('view-report').innerHTML;
+        const printWindow = window.open('', '', 'height=600,width=800');
+        printWindow.document.write('<html><head><title>Reporte Táctico</title>');
+        printWindow.document.write('<style>');
+        // Incluir solo los estilos necesarios para el reporte y la legibilidad
+        printWindow.document.write(`
+            body { font-family: 'Inter', sans-serif; color: #333; margin: 20px; }
+            .report-container { max-width: 750px; margin: 0 auto; }
+            .card { border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+            h2 { color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 5px; margin-bottom: 15px; }
+            .final-score { font-size: 48px; font-weight: bold; color: #10b981; }
+            .report-section h3 { color: #007bff; font-size: 18px; margin-bottom: 10px; }
+            .dimension-item, .action-item { padding: 10px; border-left: 3px solid #ccc; margin-bottom: 8px; background: #f9f9f9; border-radius: 4px; }
+            .dimension-value { font-weight: bold; }
+        `);
+        printWindow.document.write('</style>');
+        printWindow.document.write('</head><body>');
+        printWindow.document.write(printContent);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+    }
+    
+    // --- Lógica de Administración de JSON (Escenarios) ---
+    function toggleAdminPanel() {
+        const panel = document.getElementById('admin-panel');
+        if (panel.style.display === 'none') {
+            panel.style.display = 'block';
+        } else {
+            panel.style.display = 'none';
+        }
+    }
+    
+    // NOTA: Para una implementación real, se necesitaría lógica de `loadJsonAdmin` para sobrescribir
+    // SCENARIOS y NODES de forma segura, pero por ahora solo se implementan los handlers.
+    
+    // --- Inicialización ---
+
+    function init() {
+        // Inicializar partículas de fondo (simulación de HUD futurista)
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 50; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.top = `${Math.random() * 100}%`;
+            particle.style.left = `${Math.random() * 100}%`;
+            particle.style.animationDelay = `${Math.random() * 20}s`;
+            particlesContainer.appendChild(particle);
+        }
+
+
+        // Event listeners principales
+        document.querySelectorAll('.area-card').forEach(card => {
+            card.addEventListener('click', () => selectArea(card.dataset.area));
+        });
+        
+        document.getElementById('btn-random').addEventListener('click', startRandomScenario);
+        document.getElementById('btn-reset').addEventListener('click', resetGame);
+        document.getElementById('btn-face-analysis').addEventListener('click', toggleFaceAnalysis);
+        document.getElementById('btn-save-session').addEventListener('click', saveSession);
+        document.getElementById('btn-load-session').addEventListener('click', loadSession);
+        document.getElementById('btn-admin').addEventListener('click', toggleAdminPanel);
+        
+        // Simular carga de escenarios al inicio
+        updateSessionCount();
+        
+        // Selección inicial por defecto si el usuario no hace clic
+        selectArea('comercial'); // Seleccionar comercial por defecto.
+    }
+
+    // Asegurar que el juego está listo
     window.onload = init;
-  </script>
-  <script>
-    // Escenarios de ejemplo (Mismos que en la respuesta anterior, funcionales y con 2+ casos por área)
-    let SCENARIOS = {
-      "comercial": [
-        { id: 'c_hurto_simple', title: 'Hurto en pasillo', area: 'comercial', difficulty: 'facil', est_time: 5, start: 'n_start', nodes: { n_start: {type: 'info', text: 'Son las 15:30. Un cliente reporta que un individuo ha tomado un artículo de alto valor (ej. teléfono móvil) de un estante y lo ha guardado en su chaqueta, dirigiéndose rápidamente a la salida.', choices: ['c_intercept', 'c_monitor_call', 'c_ignore']}, n_intercept: {type: 'event', text: 'Te interpones en su camino y le pides detenerse y cooperar. El individuo se pone agresivo y amenaza con empujarte.', choices: ['c_wait', 'c_force']}, n_monitor_call: {type: 'event', text: 'Mantienes la distancia y monitoreas mientras solicitas apoyo y a la policía. El sujeto llega a la zona de estacionamiento.', choices: ['c_follow_passive', 'c_wait_police']}, n_wait: {type: 'event', text: 'Esperas el apoyo, manteniendo una distancia segura pero visible. El individuo parece vacilar.', choices: ['c_talk_calmly', 'c_force_wait']}, n_end_ok: {type: 'end', text: 'El sujeto fue inmovilizado y el artículo recuperado sin usar la fuerza. Procedimiento de contención y comunicación perfecto.'}, n_end_fail: {type: 'end', text: 'Se produce una confrontación física. Hay lesiones leves en ambos lados y el sujeto escapa con el artículo. Falla en la desescalada.'} }, choices: { c_intercept: {from: 'n_start', to: 'n_intercept', effects: {security: 5, time: 5, procedural: 5}, desc: 'Interponerse en el camino del sospechoso y requerir la devolución del artículo'}, c_monitor_call: {from: 'n_start', to: 'n_monitor_call', effects: {procedural: 10, comms: 10, time: 10}, desc: 'Mantener distancia, activar cadena de llamado y grabar el incidente'}, c_ignore: {from: 'n_start', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Ignorar el evento y asumir que la gerencia lo manejará (pérdida de activo)'}, c_wait: {from: 'n_intercept', to: 'n_wait', effects: {empathy: 5, procedural: 10}, desc: 'Mantener la calma, no reaccionar a la agresión y esperar el apoyo visual'}, c_force: {from: 'n_intercept', to: 'n_end_fail', effects: {security: -10, empathy: -10}, desc: 'Utilizar fuerza física inmediatamente para inmovilizar al sujeto'}, c_talk_calmly: {from: 'n_wait', to: 'n_end_ok', effects: {empathy: 10, procedural: 5}, desc: 'Hablar con calma y ofrecerle una salida sin conflicto a cambio de cooperación'}, c_force_wait: {from: 'n_wait', to: 'n_end_fail', effects: {security: -10}, desc: 'Proceder a inmovilizarlo sin apoyo cuando estaba vacilando'}, c_follow_passive: {from: 'n_monitor_call', to: 'n_end_fail', effects: {security: -5}, desc: 'Perder al sujeto de vista o no coordinar bien la intercepción'}, c_wait_police: {from: 'n_monitor_call', to: 'n_end_ok', effects: {procedural: 15, security: 10}, desc: 'Mantener la vigilancia discreta y esperar la llegada de la policía'} } },
-        { id: 'c_incendio_falso', title: 'Alarma de Incendio en Patio de Comidas', area: 'comercial', difficulty: 'medio', est_time: 7, start: 'n_start', nodes: { n_start: {type: 'info', text: 'Recibes alerta de incendio en el patio de comidas. Se ve humo denso saliendo de un local de comida rápida. Pánico leve.', choices: ['c_check', 'c_alarm', 'c_direct']}, n_check: {type: 'event', text: 'Te diriges al foco del humo. El fuego es pequeño pero se está propagando rápidamente en la campana extractora.', choices: ['c_extinguish', 'c_evac_zone']}, n_alarm: {type: 'event', text: 'Activas la alarma general y llamas a emergencia (bomberos/jefatura) desde el puesto central.', choices: ['c_evac_full', 'c_wait_firemen']}, n_end_ok: {type: 'end', text: 'Evacuación exitosa y contención del fuego inicial. Se minimizan los daños y no hay heridos. El procedimiento de emergencia funcionó.'}, n_end_fail: {type: 'end', text: 'El pánico aumenta sin control. El fuego se extiende a la zona de público. Hubo heridos por estampida.'} }, choices: { c_check: {from: 'n_start', to: 'n_check', effects: {time: -5}, desc: 'Ir a verificar personalmente el foco antes de activar cualquier alarma'}, c_alarm: {from: 'n_start', to: 'n_alarm', effects: {procedural: 10, comms: 10, time: 5}, desc: 'Activar la alarma general y notificar a los servicios de emergencia (Bomberos)'}, c_direct: {from: 'n_start', to: 'n_end_fail', effects: {procedural: -10, time: -10}, desc: 'Gritar a la gente que evacúe sin activar sistemas de alarma'}, c_extinguish: {from: 'n_check', to: 'n_end_fail', effects: {security: -10}, desc: 'Intentar apagar un fuego de campana extractora (grasa) con un extintor de agua'}, c_evac_zone: {from: 'n_check', to: 'n_end_ok', effects: {procedural: 15, security: 10}, desc: 'Aislar la zona de comida y usar un extintor clase K/Polvo, luego evacuar solo la zona afectada'}, c_evac_full: {from: 'n_alarm', to: 'n_end_ok', effects: {procedural: 10, comms: 5}, desc: 'Dirigir la evacuación siguiendo el protocolo, aislando la zona de comida'}, c_wait_firemen: {from: 'n_alarm', to: 'n_end_fail', effects: {time: -10}, desc: 'Esperar pasivamente la llegada de Bomberos sin asistir en la evacuación'} } }
-      ],
-      "industrial": [
-        { id: 'i_fuga_quimica', title: 'Fuga de Químico Corrosivo', area: 'industrial', difficulty: 'medio', est_time: 8, start: 'n_start', nodes: { n_start: {type: 'info', text: 'Se activa una alarma en el sector de almacenamiento. Al llegar, se detecta una fuga lenta de un químico corrosivo (etiqueta AMARILLA).', choices: ['c_isolate', 'c_check_alone', 'c_alarm_full']}, n_isolate: {type: 'event', text: 'Aislas el área con barreras temporales. El olor es perceptible y podría ser peligroso.', choices: ['c_try_contain', 'c_wait_hsm']}, n_alarm_full: {type: 'event', text: 'Activaste la alarma de emergencia y notificaste a HAZMAT. El equipo de respuesta está en camino.', choices: ['c_evac_zone', 'c_wait_in_place']}, n_end_ok: {type: 'end', text: 'La fuga fue contenida con éxito por el equipo HAZMAT sin riesgo para el personal. Procedimiento de respuesta de emergencia correcto.'}, n_end_fail: {type: 'end', text: 'La fuga escaló antes de la llegada del personal. Hubo una exposición leve y la producción se detuvo por horas.'} }, choices: { c_isolate: {from: 'n_start', to: 'n_isolate', effects: {procedural: 10, security: 5, time: 5}, desc: 'Aislar el área inmediata y notificar al supervisor'}, c_check_alone: {from: 'n_start', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Acercarse para verificar la válvula sin EPP ni apoyo'}, c_alarm_full: {from: 'n_start', to: 'n_alarm_full', effects: {procedural: 15, comms: 10, time: 5}, desc: 'Activar alarma y llamar al equipo de respuesta a materiales peligrosos (HAZMAT)'}, c_try_contain: {from: 'n_isolate', to: 'n_end_fail', effects: {security: -10}, desc: 'Intentar contener la fuga sin EPP ni ser personal HAZMAT'}, c_wait_hsm: {from: 'n_isolate', to: 'n_end_ok', effects: {procedural: 10, security: 5}, desc: 'Mantener el aislamiento y esperar al equipo especializado'}, c_evac_zone: {from: 'n_alarm_full', to: 'n_end_ok', effects: {procedural: 5, security: 5}, desc: 'Proceder con la evacuación perimetral de la zona de riesgo'}, c_wait_in_place: {from: 'n_alarm_full', to: 'n_end_fail', effects: {security: -5, time: -5}, desc: 'Esperar al equipo HAZMAT sin evacuar personal no esencial'} } },
-        { id: 'i_accidente_maquina', title: 'Accidente con Atrapamiento en Maquinaria', area: 'industrial', difficulty: 'alto', est_time: 10, start: 'n_start', nodes: { n_start: {type: 'info', text: 'Un operador de montacargas ha quedado atrapado por una carga que cayó. Está consciente, pero herido y la máquina sigue encendida.', choices: ['c_first_aid', 'c_isolate_power', 'c_call_rescue']}, n_isolate_power: {type: 'event', text: 'Has cortado la energía principal de la máquina y la zona, asegurando la escena de riesgos secundarios.', choices: ['c_start_extrication', 'c_wait_rescue']}, n_call_rescue: {type: 'event', text: 'Llamaste a emergencias y al equipo de rescate interno. Tardan 5 minutos en llegar.', choices: ['c_first_aid_wait', 'c_direct_traffic']}, n_end_ok: {type: 'end', text: 'El operador fue rescatado con heridas leves. La prioridad de seguridad de la escena fue crítica para el éxito.'}, n_end_fail: {type: 'end', text: 'El operador sufrió más daños por un rescate improvisado o por una falla secundaria (ej. incendio menor).' } }, choices: { c_first_aid: {from: 'n_start', to: 'n_end_fail', effects: {security: -10, time: -5}, desc: 'Intentar primeros auxilios sin asegurar la escena (riesgo de derrumbes/fluidos)'}, c_isolate_power: {from: 'n_start', to: 'n_isolate_power', effects: {procedural: 15, security: 10, time: 5}, desc: 'Priorizar el aislamiento de riesgos (energía, fluidos) y luego llamar'}, c_call_rescue: {from: 'n_start', to: 'n_call_rescue', effects: {comms: 10, time: 5}, desc: 'Llamar al equipo de rescate y emergencias inmediatamente'}, c_start_extrication: {from: 'n_isolate_power', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Intentar sacar al operador sin el equipo de rescate especializado'}, c_wait_rescue: {from: 'n_isolate_power', to: 'n_end_ok', effects: {procedural: 10, security: 5, time: 10}, desc: 'Mantener la seguridad de la escena y esperar al equipo especializado'}, c_first_aid_wait: {from: 'n_call_rescue', to: 'n_end_ok', effects: {empathy: 5, procedural: 5, time: 5}, desc: 'Dar soporte psicológico y primeros auxilios básicos mientras llega el rescate'}, c_direct_traffic: {from: 'n_call_rescue', to: 'n_end_fail', effects: {procedural: -5}, desc: 'Ir a dirigir el tráfico de la planta en lugar de asistir al accidentado'} } }
-      ],
-      "servicio": [
-        { id: 's_acceso_denegado', title: 'Visitante No Autorizado Agresivo', area: 'servicio', difficulty: 'facil', est_time: 4, start: 'n_start', nodes: { n_start: {type: 'info', text: 'Un hombre intenta acceder a un piso restringido sin identificación. El sistema de control de acceso lo niega. Se pone visiblemente molesto.', choices: ['c_ask_id', 'c_let_pass', 'c_call_police']}, n_ask_id: {type: 'event', text: 'Le pides que espere e identifique a su contacto interno. Te dice que es un alto ejecutivo y te amenaza con tu trabajo.', choices: ['c_de_escalate', 'c_call_super', 'c_insist_entry']}, n_end_ok: {type: 'end', text: 'El problema se resolvió sin incidente. La comunicación y el respeto al protocolo fueron prioritarios.'}, n_end_fail: {type: 'end', text: 'El individuo forzó la entrada. El protocolo fue roto y se puso en riesgo la seguridad ejecutiva.'} }, choices: { c_ask_id: {from: 'n_start', to: 'n_ask_id', effects: {procedural: 10, security: 5, time: 5}, desc: 'Requerir identificación y contacto interno con firmeza y cortesía'}, c_let_pass: {from: 'n_start', to: 'n_end_fail', effects: {security: -20, procedural: -15}, desc: 'Dejarlo pasar por temor a su amenaza'}, c_call_police: {from: 'n_start', to: 'n_ask_id', effects: {comms: 10, time: 10}, desc: 'Llamar a la policía de inmediato (puede escalar la situación innecesariamente)'}, c_de_escalate: {from: 'n_ask_id', to: 'n_end_ok', effects: {empathy: 10, comms: 5, procedural: 5}, desc: 'Usar desescalada verbal, ofrecer ayuda para contactar a su jefe de turno, y mantener la línea de seguridad'}, c_call_super: {from: 'n_ask_id', to: 'n_end_ok', effects: {procedural: 15, comms: 10, time: 5}, desc: 'Llamar al supervisor de contrato o de seguridad para verificar el permiso'}, c_insist_entry: {from: 'n_ask_id', to: 'n_end_fail', effects: {security: -15, procedural: -10, empathy: -10}, desc: 'Exigirle el acceso y el nombre de su contacto con tono amenazante'} } },
-        { id: 's_paquete_sospechoso', title: 'Paquete Olvidado en Lobby', area: 'servicio', difficulty: 'medio', est_time: 6, start: 'n_start', nodes: { n_start: {type: 'info', text: 'Un bolso de mano ha sido dejado solo en el lobby central por 15 minutos. No hay dueño visible. Alerta de nivel 2.', choices: ['c_approach_check', 'c_isolate_call', 'c_announce']}, n_isolate_call: {type: 'event', text: 'Has establecido un perímetro de seguridad inicial y notificaste a tu central y a la policía.', choices: ['c_wait_expert', 'c_move_package']}, n_end_ok: {type: 'end', text: 'Paquete analizado y declarado seguro. El procedimiento de seguridad y la comunicación fueron perfectos. Minimizaste el riesgo.'}, n_end_fail: {type: 'end', text: 'El paquete contenía material pirotécnico inestable. Hubo una explosión menor y pánico entre los ocupantes.'} }, choices: { c_approach_check: {from: 'n_start', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Acercarse al paquete y revisarlo para ver si tiene etiqueta o contenido'}, c_isolate_call: {from: 'n_start', to: 'n_isolate_call', effects: {procedural: 15, security: 10, comms: 10, time: 5}, desc: 'Establecer perímetro, no tocar, activar el protocolo de llamada a central/policía/desactivación'}, c_announce: {from: 'n_start', to: 'n_isolate_call', effects: {empathy: -5, time: -5}, desc: 'Anunciar por el parlante del lobby: "¿Quién olvidó un bolso?" (Advertir al posible atacante)'}, c_wait_expert: {from: 'n_isolate_call', to: 'n_end_ok', effects: {procedural: 10, security: 5}, desc: 'Mantener el perímetro y esperar al equipo especializado (policía/bomberos)'}, c_move_package: {from: 'n_isolate_call', to: 'n_end_fail', effects: {security: -20, procedural: -15}, desc: 'Mover el paquete a un área más segura (alto riesgo de detonación)'} } }
-      ],
-      "salud": [
-        { id: 'h_paciente_agresivo', title: 'Alteración de Orden en Sala de Espera', area: 'salud', difficulty: 'medio', est_time: 6, start: 'n_start', nodes: { n_start: {type: 'info', text: 'Un paciente en la sala de espera está gritando y golpeando objetos, exigiendo ser atendido de inmediato. El resto de los usuarios están asustados.', choices: ['c_intervene_distance', 'c_call_security_chief', 'c_physical_restraint']}, n_intervene_distance: {type: 'event', text: 'Te acercas con una postura abierta y serena, manteniendo una distancia de seguridad. Él te ignora.', choices: ['c_talk_calmly', 'c_call_paramedics']}, n_talk_calmly: {type: 'event', text: 'Sigues la desescalada verbal y preguntando su nombre. Gana 10 segundos de su atención.', choices: ['c_offer_safe_area', 'c_call_paramedics']}, n_end_ok: {type: 'end', text: 'El cliente acepta ser acompañado a un área privada, donde el personal médico de emergencia se hace cargo. Evitaste la confrontación y protegiste al público. Excelente manejo de crisis.'}, n_end_fail_physical: {type: 'end', text: 'El intento de contención física causa una reacción violenta. El cliente y el guardia sufren heridas leves. Falla en el protocolo de desescalada.'}, n_end_fail_delay: {type: 'end', text: 'La demora o la falta de apoyo permiten que el cliente rompa una vitrina antes de ser contenido. Daño material y trauma a los testigos.'} }, choices: { c_intervene_distance: {from: 'n_start', to: 'n_intervene_distance', effects: {procedural: 10, security: 5, empathy: 5, time: 5}, desc: 'Acercarse manteniendo la distancia de seguridad (buffer zone)'}, c_call_security_chief: {from: 'n_start', to: 'n_intervene_distance', effects: {procedural: 5, comms: 10, time: 10}, desc: 'Llamar a la central de inmediato y solicitar apoyo, luego acercarse'}, c_physical_restraint: {from: 'n_start', to: 'n_end_fail_physical', effects: {security: -15, empathy: -10}, desc: 'Intentar la contención física sin técnicas de desescalada ni refuerzos'}, c_talk_calmly: {from: 'n_intervene_distance', to: 'n_talk_calmly', effects: {empathy: 10, comms: 5}, desc: 'Mantener el diálogo calmado, buscando una causa o distracción'}, c_call_paramedics: {from: 'n_intervene_distance', to: 'n_end_fail_delay', effects: {time: -10}, desc: 'Solo llamar a enfermería y esperar que ellos tomen la acción (delegar la seguridad)'}, c_offer_safe_area: {from: 'n_talk_calmly', to: 'n_end_ok', effects: {procedural: 15, security: 10, empathy: 5}, desc: 'Ofrecer una zona privada para conversar, sacándolo de la vista pública'} } },
-        { id: 'h_intruso_farmacia', title: 'Acceso a Farmacia o Bodega de Drogas', area: 'salud', difficulty: 'alto', est_time: 8, start: 'n_start', nodes: { n_start: {type: 'info', text: 'Un individuo con capucha fuerza la puerta de la farmacia principal. La alarma se activa.', choices: ['c_pursuit', 'c_isolate_and_call', 'c_ask_description']}, n_pursuit: {type: 'event', text: 'El sujeto corre por el pasillo central, lleva una bolsa llena. Grita que tiene un arma.', choices: ['c_calm_talk', 'c_try_catch', 'c_fall_back']}, n_end_ok: {type: 'end', text: 'El intruso fue contenido por la fuerza pública o desistió de su acto ante la respuesta profesional. Recuperación de la mercancía. Tarea cumplida.'}, n_end_fail: {type: 'end', text: 'Hubo un herido durante la persecución, o el intruso escapó con la mercancía antes de la captura. Investigación interna en curso.'} }, choices: { c_pursuit: {from: 'n_start', to: 'n_pursuit', effects: {time: -5, procedural: 5}, desc: 'Iniciar la búsqueda inmediata por las áreas conocidas'}, c_isolate_and_call: {from: 'n_start', to: 'n_pursuit', effects: {procedural: 10, comms: 5, time: 10}, desc: 'Asegurar salidas y pedir apoyo antes de buscar'}, c_ask_description: {from: 'n_start', to: 'n_pursuit', effects: {comms: 10, time: -5}, desc: 'Preguntar por descripción y antecedentes al personal'}, c_calm_talk: {from: 'n_pursuit', to: 'n_end_ok', effects: {empathy: 15, procedural: 10, security: 5}, desc: 'Usar voz calmada y ofrecer ayuda sin contacto físico'}, c_try_catch: {from: 'n_pursuit', to: 'n_end_fail', effects: {security: -10, empathy: -15}, desc: 'Intentar la contención física sin técnicas de desescalada'}, c_fall_back: {from: 'n_pursuit', to: 'n_end_ok', effects: {security: 15, procedural: 10, time: 5}, desc: 'Retirarse a una zona segura, monitorear la ruta de escape y esperar a la policía'} } }
-      ],
-      "mineria": [
-        { id: 'm_intruso_bodega', title: 'Intrusión nocturna en Bodega de Alto Valor', area: 'mineria', difficulty: 'alto', est_time: 10, start: 'n_start', nodes: { n_start: {type: 'info', text: 'Alarma de perímetro activada a las 02:00. Las cámaras muestran un individuo saltando la cerca y dirigiéndose a la bodega de repuestos críticos.', choices: ['c_send_patrol', 'c_monitor_only', 'c_call_police']}, n_call_police: {type: 'event', text: 'Notificas a la central y a la policía. El intruso ha entrado en la bodega.', choices: ['c_intercept_discreet', 'c_intercept_soft', 'c_wait_police']}, n_end_ok: {type: 'end', text: 'El intruso fue detenido por la fuerza pública con el activo recuperado. Se aplicó un excelente control táctico.'}, n_end_fail: {type: 'end', text: 'El intruso escapa con el material de alto valor. Falla en la respuesta perimetral y táctica.'} }, choices: { c_send_patrol: {from: 'n_start', to: 'n_end_fail', effects: {security: -15, procedural: -10}, desc: 'Enviar una patrulla inmediatamente sin coordinar apoyo externo (riesgo de enfrentamiento)'}, c_monitor_only: {from: 'n_start', to: 'n_call_police', effects: {procedural: 5, comms: 5}, desc: 'Mantener la vigilancia y registrar el evento antes de cualquier acción'}, c_call_police: {from: 'n_start', to: 'n_call_police', effects: {procedural: 15, comms: 10, time: 5}, desc: 'Notificar de inmediato a la policía y al supervisor, esperando la llegada de refuerzos'}, c_intercept_discreet: {from: 'n_call_police', to: 'n_end_fail', effects: {security: -20, time: -5}, desc: 'Intentar una intercepción discreta y solitaria dentro de la bodega (alto riesgo de emboscada)'}, c_intercept_soft: {from: 'n_call_police', to: 'n_end_fail', effects: {security: -10}, desc: 'Intentar disuadirlo verbalmente (riesgo si está armado)'}, c_wait_police: {from: 'n_call_police', to: 'n_end_ok', effects: {procedural: 10, security: 10, comms: 5}, desc: 'Mantener la vigilancia y esperar a la fuerza pública'} } },
-        { id: 'm_conato_derrame', title: 'Conato de Derrame de Flotación', area: 'mineria', difficulty: 'medio', est_time: 6, start: 'n_start', nodes: { n_start: {type: 'info', text: 'Recibes un reporte de una pequeña fuga en una línea de flotación. El área de la máquina está cerca de un desagüe.', choices: ['c_stop_leak_solo', 'c_fire_protocol', 'c_notify_hsm']}, n_fire_protocol: {type: 'event', text: 'Activaste la alarma local y pediste apoyo. El químico no es inflamable pero sí contaminante.', choices: ['c_use_absorbent', 'c_wait_firemen']}, n_notify_hsm: {type: 'event', text: 'El equipo de Seguridad y Medio Ambiente (SSMA) está en camino con equipo de contención.', choices: ['c_isolate_source', 'c_wait_hsm']}, n_end_ok: {type: 'end', text: 'La fuga fue contenida siguiendo el protocolo. Excelente coordinación con SSMA. Daño ambiental minimizado.'}, n_end_fail: {type: 'end', text: 'El derrame llegó al desagüe o causó la detención de operaciones por mal manejo inicial.'} }, choices: { c_stop_leak_solo: {from: 'n_start', to: 'n_end_fail', effects: {security: -10, procedural: -5}, desc: 'Intentar cerrar la válvula solo sin conocer el químico y sin equipo'}, c_fire_protocol: {from: 'n_start', to: 'n_fire_protocol', effects: {procedural: 5, time: -5}, desc: 'Activar el protocolo de incendio (incorrecto para derrame químico)'}, c_notify_hsm: {from: 'n_start', to: 'n_notify_hsm', effects: {procedural: 15, comms: 10, time: 5}, desc: 'Activar el protocolo de derrame y llamar a SSMA/HAZMAT de inmediato'}, c_use_absorbent: {from: 'n_fire_protocol', to: 'n_end_fail', effects: {procedural: -5}, desc: 'Usar absorbente sin EPP ni conocimiento del tipo de químico'}, c_wait_firemen: {from: 'n_fire_protocol', to: 'n_end_fail', effects: {time: -10}, desc: 'Esperar a Bomberos sin tomar acción de contención (fuga continua)'}, c_isolate_source: {from: 'n_notify_hsm', to: 'n_end_ok', effects: {procedural: 10, security: 5}, desc: 'Bloquear el paso hacia el desagüe y asegurar el área de fuga'} } }
-      ],
-      "energia": [
-        { id: 'e_vandalismo_subestacion', title: 'Vandalismo en Subestación Remota', area: 'energia', difficulty: 'alto', est_time: 12, start: 'n_start', nodes: { n_start: {type: 'info', text: 'Sistema de CCTV muestra a 3 individuos entrando al perímetro de una subestación eléctrica remota. Están dañando el cercado.', choices: ['c_intervene_direct', 'c_call_police_first', 'c_activate_siren']}, n_call_police_first: {type: 'event', text: 'Llamaste a la policía de inmediato y notificaste a operaciones. Los sujetos no han llegado a los transformadores.', choices: ['c_warn_loud', 'c_wait_silent']}, n_activate_siren: {type: 'event', text: 'Activaste la sirena y luces. Los sujetos comienzan a correr.', choices: ['c_pursuit_vehicle', 'c_monitor_escape']}, n_end_ok: {type: 'end', text: 'Intrusos detenidos o en fuga total sin causar daño a la infraestructura crítica. Procedimiento de contención correcto.'}, n_end_fail: {type: 'end', text: 'Los intrusos cortan la energía o causan una explosión al interactuar con el equipo de alto voltaje. Riesgo vital y daño a la infraestructura.'} }, choices: { c_intervene_direct: {from: 'n_start', to: 'n_end_fail', effects: {security: -20, procedural: -15}, desc: 'Intervenir solo sin apoyo (riesgo vital por electricidad y agresión)'}, c_call_police_first: {from: 'n_start', to: 'n_call_police_first', effects: {procedural: 15, comms: 10, time: 5}, desc: 'Notificar a la policía y operaciones como primera medida'}, c_activate_siren: {from: 'n_start', to: 'n_activate_siren', effects: {time: -5, procedural: 5}, desc: 'Activar sirena y luces de inmediato para disuadir a los intrusos'}, c_warn_loud: {from: 'n_call_police_first', to: 'n_activate_siren', effects: {time: -5}, desc: 'Usar altavoz para advertir su presencia (puede ser contraproducente)'}, c_wait_silent: {from: 'n_call_police_first', to: 'n_end_ok', effects: {procedural: 10, security: 10, comms: 5}, desc: 'Mantener la vigilancia encubierta hasta la llegada de la fuerza pública'}, c_pursuit_vehicle: {from: 'n_activate_siren', to: 'n_end_fail', effects: {security: -10, time: -10}, desc: 'Perseguir a los intrusos en vehículo sin esperar refuerzos'}, c_monitor_escape: {from: 'n_activate_siren', to: 'n_end_ok', effects: {procedural: 5, security: 5}, desc: 'Monitorear la ruta de escape para dirigir a la policía, sin entrar en persecución'} } }
-      ],
-      // INICIO NUEVAS SECCIONES SOLICITADAS POR EL USUARIO
-      "entidades_portuarias": [
-        {
-          id: 'p_intruso_muelle',
-          title: 'Intrusión Ilegal en Muelle de Carga',
-          area: 'entidades_portuarias',
-          difficulty: 'alto',
-          est_time: 8,
-          start: 'n_start',
-          nodes: {
-            n_start: {type: 'info', text: 'Un sensor de intrusión en el muelle A2 se activa. La cámara muestra a un individuo intentando acceder a la zona de contenedores de alto valor.', choices: ['c_intercept_solo', 'c_monitor_call', 'c_activate_flood']},
-            n_monitor_call: {type: 'event', text: 'Mantienes la vigilancia y notificas a la Armada/Autoridad Portuaria y a tu supervisor. El intruso detecta el movimiento y se oculta.', choices: ['c_wait_force', 'c_patrol_zone']},
-            n_end_ok: {type: 'end', text: 'El intruso fue inmovilizado y entregado a la autoridad. Se siguió el Protocolo ISPS/PBIP rigurosamente. Tarea cumplida con cero riesgo personal.'},
-            n_end_fail: {type: 'end', text: 'El intruso escapa o se produce una confrontación física. Se reporta un aumento de la amenaza a la seguridad de la carga. Falla de protocolo.'}
-          },
-          choices: {
-            c_intercept_solo: {from: 'n_start', to: 'n_end_fail', effects: {security: -20, procedural: -10, time: -5}, desc: 'Intervenir solo en la zona portuaria (Alto riesgo de emboscada)'},
-            c_monitor_call: {from: 'n_start', to: 'n_monitor_call', effects: {procedural: 15, comms: 10, security: 5}, desc: 'Monitorear la acción, asegurar la grabación y llamar a la autoridad competente (Protocolo PBIP/ISPS)'},
-            c_activate_flood: {from: 'n_start', to: 'n_end_fail', effects: {time: -10, security: -5}, desc: 'Encender todas las luces y sirenas de inmediato (Alertar sin tener control)'},
-            c_wait_force: {from: 'n_monitor_call', to: 'n_end_ok', effects: {procedural: 10, security: 10}, desc: 'Mantener la posición de vigilancia y esperar a la llegada del apoyo armado'},
-            c_patrol_zone: {from: 'n_monitor_call', to: 'n_end_fail', effects: {security: -10, time: -5}, desc: 'Iniciar una búsqueda activa sin conocer la ubicación o intenciones del intruso'}
-          }
-        }
-      ],
-      "otros_servicios": [
-        {
-          id: 'o_pelea_evento',
-          title: 'Pelea en Zona VIP de Evento Masivo',
-          area: 'otros_servicios',
-          difficulty: 'medio',
-          est_time: 4,
-          start: 'n_start',
-          nodes: {
-            n_start: {type: 'info', text: 'Dos asistentes VIP comienzan una fuerte discusión que escala a empujones. La multitud comienza a aglomerarse, creando un riesgo de estampida.', choices: ['c_intervencion_verbal', 'c_llamar_refuerzos', 'c_uso_fuerza']},
-            n_verbal: {type: 'event', text: 'Usas técnicas de desescalada verbal, pero una persona intenta golpear a la otra.', choices: ['c_separar', 'c_aislar']},
-            n_end_ok: {type: 'end', text: 'Contuviste a las personas sin usar la fuerza innecesaria y restableciste el orden. El manejo de multitudes fue eficaz.'},
-            n_end_fail: {type: 'end', text: 'La intervención tardía o agresiva provoca que más personas se unan a la pelea. El evento es temporalmente detenido.'}
-          },
-          choices: {
-            c_intervencion_verbal: {from: 'n_start', to: 'n_verbal', effects: {procedural: 10, empathy: 10, time: 5}, desc: 'Intervenir verbalmente para calmar y separar (priorizar desescalada)'},
-            c_llamar_refuerzos: {from: 'n_start', to: 'n_verbal', effects: {comms: 10, procedural: 5, time: 10}, desc: 'Llamar de inmediato a refuerzos de control de multitudes y pedir que se acerquen'},
-            c_uso_fuerza: {from: 'n_start', to: 'n_end_fail', effects: {security: -10, empathy: -15, time: -5}, desc: 'Usar la fuerza física para separarlos de inmediato (sin intentar desescalada)'},
-            c_separar: {from: 'n_verbal', to: 'n_end_fail', effects: {security: -5, procedural: -5}, desc: 'Intentar separar a la fuerza con un solo agente (alto riesgo de lesión)'},
-            c_aislar: {from: 'n_verbal', to: 'n_end_ok', effects: {procedural: 15, security: 10}, desc: 'Dirigir a los involucrados a un área de aislamiento con apoyo del equipo'}
-          }
-        }
-      ]
-      // FIN NUEVAS SECCIONES SOLICITADAS POR EL USUARIO
-    };
+
   </script>
 </body>
 
