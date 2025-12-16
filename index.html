@@ -157,6 +157,13 @@
       color: var(--text-primary);
       border-color: var(--accent);
     }
+    
+    /* Estilo activo para botón de voz */
+    button#btn-tts.speaking {
+        color: var(--accent);
+        border-color: var(--accent);
+        box-shadow: 0 0 10px var(--accent-glow);
+    }
 
     /* Estilo para botón de biometría activa */
     button#btn-face-analysis.active {
@@ -1122,11 +1129,29 @@
         }
     }
 
+    // --- NUEVO: Funcionalidad de Texto a Voz (TTS) ---
+    function toggleTTS() {
+        const btn = document.getElementById('btn-tts');
+        const textToRead = document.getElementById('node-text').textContent;
+
+        if (!textToRead) return;
+
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+            btn.classList.remove('speaking');
+        } else {
+            const utterance = new SpeechSynthesisUtterance(textToRead);
+            utterance.lang = 'es-ES'; // Configurar idioma
+            utterance.onend = () => btn.classList.remove('speaking');
+            
+            btn.classList.add('speaking');
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+    // ------------------------------------------------
+
     function calculatePartialScore() {
         let totalWeightedScore = 0;
-        // Max score for each dimension is 20 points.
-        // Formula: (procedural*0.4) + (security*0.3) + (comms*0.15) + (time*0.1) + (empathy*0.05)
-        // If all are 20: (20 * 0.4) + (20 * 0.3) + (20 * 0.15) + (20 * 0.1) + (20 * 0.05) = 20
         DIMENSIONS.forEach(dim => {
             totalWeightedScore += gameState.dimensions[dim] * WEIGHTS[dim];
         });
@@ -1142,7 +1167,6 @@
     // Definición de Escenarios, Nodos y Opciones
     const SCENARIOS = {
       comercial: [
-        // INICIO: Escenarios Agregados por Analista de Inteligencia (OCTO) - 5 Escenarios
         {
           id: 'psiquiatrica',
           title: 'Manejo de Persona con Descompensación Psiquiátrica', // Escenario 1: Solicitado como prioridad
@@ -1157,7 +1181,7 @@
           area: 'Comercial/Retail',
           difficulty: 'alto',
           est_time: 10,
-          start: 'n_start_hurto' // Se utiliza un nodo existente como placeholder para mantener la funcionalidad mínima
+          start: 'n_start_hurto' // Se utiliza un nodo existente como placeholder
         },
         {
           id: 'evacuacion_emergencia',
@@ -1183,7 +1207,6 @@
           est_time: 5,
           start: 'n_start_hurto' // Se utiliza un nodo existente como placeholder
         },
-        // FIN: Escenarios Agregados por Analista de Inteligencia (OCTO) - 5 Escenarios
         {
           id: 'hurto_flagrante',
           title: 'Hurto Flagrante con Resistencia', // Escenario Original
@@ -1213,6 +1236,30 @@
           start: 'n_start_acceso'
         }
       ],
+      // --- MODIFICACIÓN: Agregados 2 Escenarios para CCTV (otros_servicios) ---
+      otros_servicios: [
+        {
+          id: 'cctv_objeto',
+          title: 'Detección de Objeto Sospechoso',
+          area: 'CCTV / Monitoreo',
+          difficulty: 'alto',
+          est_time: 8,
+          start: 'n_cctv_obj_start'
+        },
+        {
+          id: 'cctv_piggybacking',
+          title: 'Control de Acceso (Piggybacking)',
+          area: 'CCTV / Monitoreo',
+          difficulty: 'medio',
+          est_time: 5,
+          start: 'n_cctv_acc_start'
+        }
+      ],
+      // ------------------------------------------------------------------------
+      salud: [],
+      mineria: [],
+      energia: [],
+      entidades_portuarias: [],
       publico_abierto: [
         {
           id: 'pelea_masiva',
@@ -1222,26 +1269,59 @@
           est_time: 15,
           start: 'n_start'
         }
-      ],
-      salud: [],
-      mineria: [],
-      energia: [],
-      entidades_portuarias: [],
-      otros_servicios: []
+      ]
     };
 
     const NODES = {
-      // --- NODO DE FALLA CRÍTICA (AÑADIDO) ---
+      // --- NODO DE FALLA CRÍTICA ---
       [GENERIC_CRITICAL_FAIL_NODE]: {
         type: 'end',
         text: '🚨 Falla Crítica de Protocolo: Las acciones tomadas comprometieron la seguridad o el procedimiento a un nivel inaceptable, resultando en un incidente grave y finalizando la simulación. **No cumpliste con las pautas mínimas de seguridad operativa.**',
       },
-      // --- NODO DE FALLA POR PORCENTAJE (NUEVO) ---
       [MISSION_TOTAL_FAIL_NODE]: {
         type: 'end',
         text: '📉 Misión Incompleta: Aunque no cometiste una falla crítica inmediata, la acumulación de decisiones subóptimas y la baja puntuación final (menos del 60%) indican que el caso no se resolvió de manera eficiente o segura. **Se requiere reentrenamiento táctico.**',
       },
-      // ----------------------------------------
+
+      // --- NODOS CCTV ESCENARIO 1: Objeto Sospechoso ---
+      n_cctv_obj_start: {
+        type: 'start',
+        text: 'Operando las cámaras del sector Norte, visualiza una mochila negra abandonada cerca de los pilares estructurales. El dueño no está a la vista. ¿Cuál es su primera acción?',
+        choices: ['c_cctv_obj_zoom', 'c_cctv_obj_ignore', 'c_cctv_obj_alarm']
+      },
+      n_cctv_obj_analysis: {
+        type: 'continue',
+        text: 'Ha confirmado mediante revisión de grabación que el sujeto dejó el objeto intencionalmente y salió rápido. El objeto lleva 4 minutos allí. Procedimiento:',
+        choices: ['c_cctv_obj_cordon', 'c_cctv_obj_guard', 'c_cctv_obj_open']
+      },
+      n_end_ok_cctv_obj: {
+        type: 'end',
+        text: 'Correcto. La detección temprana, verificación por video y el aislamiento de la zona permitieron al GOPE actuar sin riesgos civiles. Protocolo cumplido.'
+      },
+      n_end_fail_cctv_obj: {
+        type: 'end',
+        text: 'Error de procedimiento grave. Manipular un objeto sospechoso o no aislar la zona puso en riesgo la vida del personal y civiles.'
+      },
+
+      // --- NODOS CCTV ESCENARIO 2: Piggybacking ---
+      n_cctv_acc_start: {
+        type: 'start',
+        text: 'En el acceso de empleados, observa que un individuo aprovecha la apertura de la puerta por parte de un funcionario autorizado para colarse detrás sin marcar tarjeta (Piggybacking).',
+        choices: ['c_cctv_acc_log', 'c_cctv_acc_speaker', 'c_cctv_acc_ignore']
+      },
+      n_cctv_acc_intercept: {
+        type: 'continue',
+        text: 'Ha notificado a seguridad física y bloqueado los accesos siguientes. El sujeto está en el pasillo B, confundido. ¿Qué instrucción da a los guardias de piso?',
+        choices: ['c_cctv_acc_verify', 'c_cctv_acc_force']
+      },
+      n_end_ok_cctv_acc: {
+        type: 'end',
+        text: 'Excelente coordinación. El sujeto fue interceptado en zona segura. Se verificó que era un empleado nuevo sin credencial, pero se aplicó la sanción administrativa correspondiente por vulnerar seguridad.'
+      },
+      n_end_fail_cctv_acc: {
+        type: 'end',
+        text: 'El sujeto logró ingresar a zonas críticas debido a la demora en el reporte o uso incorrecto de la fuerza. Falla de seguridad perimetral.'
+      },
 
       // NODOS PARA ESPACIO PÚBLICO
       n_start: {
@@ -1348,6 +1428,77 @@
     };
 
     const CHOICES = {
+      // --- OPCIONES CCTV ESCENARIO 1 (Objeto) ---
+      c_cctv_obj_zoom: {
+        from: 'n_cctv_obj_start',
+        to: 'n_cctv_obj_analysis',
+        effects: { procedural: 10, comms: 5, security: 5 },
+        desc: 'Realizar zoom digital y "replay" para verificar quién dejó el objeto y cuándo.'
+      },
+      c_cctv_obj_ignore: {
+        from: 'n_cctv_obj_start',
+        to: 'n_end_fail_cctv_obj',
+        effects: { security: -20, procedural: -15 },
+        desc: 'Asumir que es basura y esperar a que personal de aseo la retire.'
+      },
+      c_cctv_obj_alarm: {
+        from: 'n_cctv_obj_start',
+        to: 'n_end_fail_cctv_obj',
+        effects: { empathy: -10, comms: -5, procedural: -5 },
+        desc: 'Activar alarma general de evacuación inmediata sin verificar (Riesgo de pánico innecesario).'
+      },
+      c_cctv_obj_cordon: {
+        from: 'n_cctv_obj_analysis',
+        to: 'n_end_ok_cctv_obj',
+        effects: { security: 15, comms: 10 },
+        desc: 'Comunicar a guardias de piso para acordonar perímetro de seguridad y llamar a Carabineros.'
+      },
+      c_cctv_obj_guard: {
+        from: 'n_cctv_obj_analysis',
+        to: 'n_end_fail_cctv_obj',
+        effects: { security: -15 },
+        desc: 'Enviar un guardia a revisar manualmente el contenido de la mochila.'
+      },
+      c_cctv_obj_open: {
+        from: 'n_cctv_obj_analysis',
+        to: 'n_end_fail_cctv_obj',
+        effects: { security: -20 },
+        desc: 'Bajar usted mismo a abrir la mochila.'
+      },
+
+      // --- OPCIONES CCTV ESCENARIO 2 (Acceso) ---
+      c_cctv_acc_log: {
+        from: 'n_cctv_acc_start',
+        to: 'n_cctv_acc_intercept',
+        effects: { procedural: 10, security: 5, comms: 5 },
+        desc: 'Registrar el evento visualmente, notificar por radio a seguridad de piso con descripción del sujeto.'
+      },
+      c_cctv_acc_speaker: {
+        from: 'n_cctv_acc_start',
+        to: 'n_cctv_acc_intercept',
+        effects: { comms: 5, procedural: -5, empathy: -5 },
+        desc: 'Usar altavoz para gritar al sujeto que se detenga (Poco profesional, pero alerta).'
+      },
+      c_cctv_acc_ignore: {
+        from: 'n_cctv_acc_start',
+        to: 'n_end_fail_cctv_acc',
+        effects: { security: -20, procedural: -20 },
+        desc: 'Ignorar el hecho, asumiendo que es un empleado conocido.'
+      },
+      c_cctv_acc_verify: {
+        from: 'n_cctv_acc_intercept',
+        to: 'n_end_ok_cctv_acc',
+        effects: { procedural: 10, empathy: 5, security: 10 },
+        desc: 'Solicitar credencial e identidad amablemente, retener y derivar a RRHH/Seguridad.'
+      },
+      c_cctv_acc_force: {
+        from: 'n_cctv_acc_intercept',
+        to: 'n_end_fail_cctv_acc',
+        effects: { empathy: -15, security: -5 },
+        desc: 'Reducir al sujeto contra el suelo inmediatamente como si fuera un intruso armado.'
+      },
+
+
       // OPCIONES PARA ESPACIO PÚBLICO
       c_intervencion_verbal: {
         from: 'n_start',
@@ -1728,6 +1879,10 @@
     }
 
     function loadNode(nodeId) {
+        // Cancelar voz si estaba hablando del nodo anterior
+        window.speechSynthesis.cancel();
+        document.getElementById('btn-tts').classList.remove('speaking');
+
         const scenario = gameState.currentScenario;
         // Asumiendo que el escenario está definido globalmente o se puede inferir.
         // Aquí usamos la estructura global NODES
@@ -2166,6 +2321,10 @@
     }
 
     function printReport() {
+        // --- MODIFICACIÓN: Captura del Nombre para el Reporte ---
+        const userName = document.getElementById('user-name').value || 'Usuario No Registrado';
+        // --------------------------------------------------------
+
         // Simple print function for the report view
         const printContent = document.getElementById('view-report').innerHTML;
         const printWindow = window.open('', '', 'height=600,width=800');
@@ -2184,6 +2343,8 @@
         `);
         printWindow.document.write('</style>');
         printWindow.document.write('</head><body>');
+        // Agregar Nombre al Header del Print
+        printWindow.document.write(`<h3 style="text-align:center; color: #555;">Evaluación de: ${userName}</h3>`);
         printWindow.document.write(printContent);
         printWindow.document.write('</body></html>');
         printWindow.document.close();
@@ -2227,6 +2388,7 @@
         document.getElementById('btn-random').addEventListener('click', startRandomScenario);
         document.getElementById('btn-reset').addEventListener('click', resetGame);
         document.getElementById('btn-face-analysis').addEventListener('click', toggleFaceAnalysis);
+        document.getElementById('btn-tts').addEventListener('click', toggleTTS); // MODIFICACIÓN: Agregar listener TTS
         document.getElementById('btn-save-session').addEventListener('click', saveSession);
         document.getElementById('btn-load-session').addEventListener('click', loadSession);
         document.getElementById('btn-admin').addEventListener('click', toggleAdminPanel);
@@ -2234,8 +2396,8 @@
         // Simular carga de escenarios al inicio
         updateSessionCount();
         
-        // Selección inicial por defecto si el usuario no hace clic
-        selectArea('comercial'); // Seleccionar comercial por defecto.
+        // --- MODIFICACIÓN: Visualización Inicial ---
+        // Se eliminó la línea "selectArea('comercial');" para que el usuario inicie sin preguntas desplegadas.
     }
 
     // Asegurar que el juego está listo
