@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Simulador de Capacitación - Guardias de Seguridad</title>
   <style>
     :root {
@@ -716,6 +716,192 @@
       .area-grid {
         grid-template-columns: 1fr;
       }
+    }
+
+    /* =========================================
+       NUEVOS ESTILOS MÓVILES (NATIVE APP FEEL)
+       Solo se aplican en pantallas menores a 768px
+       ========================================= */
+    @media (max-width: 768px) {
+
+        /* 1. AJUSTES GENERALES DE CONTENEDOR */
+        body {
+            /* Evita rebote elástico en iOS para sentirlo más como app */
+            overscroll-behavior-y: none; 
+            background: var(--bg-primary); /* Fondo sólido para rendimiento */
+        }
+        
+        .particles {
+            display: none; /* Desactivar partículas en móvil para ahorrar batería */
+        }
+
+        .container {
+            padding: 10px;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        /* 2. HEADER COMPACTO Y FIJO */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 0 0 15px 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        header h1 {
+            font-size: 16px; /* Texto más pequeño */
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            display: none; /* Ocultar subtítulos para ahorrar espacio */
+        }
+
+        .logo {
+            width: 35px;
+            height: 35px;
+            font-size: 18px;
+        }
+
+        /* Botones del header más compactos */
+        .header-actions {
+            width: 100%;
+            justify-content: space-between;
+            margin-top: 5px;
+            overflow-x: auto; /* Scroll horizontal si hay muchos botones */
+            padding-bottom: 5px;
+        }
+
+        .header-actions button {
+            padding: 6px 12px;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        /* 3. TRANSFORMACIÓN DEL LAYOUT (GRID A STACK) */
+        .main-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* 4. SIDEBAR COMO "PANEL DE CONTROL" INFERIOR */
+        /* Movemos el panel de usuario al final, pero las estadísticas arriba */
+        .sidebar {
+            order: 2; /* Se va al final del flujo */
+        }
+
+        /* 5. HUD DE JUEGO (GAMEPLAY) */
+        .scenario-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 15px;
+        }
+
+        .timer-group {
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .timer {
+            font-size: 14px;
+            padding: 5px 10px;
+        }
+
+        /* 6. ZONA TÁCTIL (BOTONES Y OPCIONES) */
+        /* Convertimos las opciones en botones grandes fáciles de tocar con el pulgar */
+        .choices-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-bottom: 80px; /* Espacio extra abajo para scroll */
+        }
+
+        .choice-btn {
+            padding: 20px 15px;
+            border-width: 1px;
+            /* Efecto de elevación táctil */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+        }
+        
+        .choice-btn:active {
+            transform: scale(0.98); /* Feedback visual al tocar */
+        }
+
+        .choice-title {
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
+        /* Etiquetas de efectos más grandes para lectura */
+        .effect-tag {
+            font-size: 11px;
+            padding: 4px 8px;
+            margin-top: 5px;
+            display: inline-block;
+        }
+
+        /* 7. ADAPTACIÓN DEL PANEL DE DIMENSIONES (STATS) */
+        /* Hacemos que las dimensiones sean compactas horizontalmente en móvil */
+        .dimensions-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .dimension-item {
+            flex: 1 1 45%; /* 2 columnas */
+            padding: 8px;
+            font-size: 12px;
+        }
+
+        .dimension-value {
+            font-size: 14px;
+        }
+
+        /* 8. MÓDULO DE BIOMETRÍA MÓVIL */
+        /* Lo hacemos flotante y pequeño para no tapar el texto */
+        .face-analysis-module {
+            top: auto;
+            bottom: 20px;
+            right: 20px;
+            width: 80px;
+        }
+        
+        .face-analysis-module video, 
+        .face-analysis-module canvas {
+            width: 80px;
+            height: 60px;
+        }
+
+        /* 9. CAMPOS DE ENTRADA (TECLADO MÓVIL AMIGABLE) */
+        .user-input {
+            padding: 15px; /* Más área de toque */
+            font-size: 16px; /* Evita zoom automático en iOS */
+        }
+
+        /* 10. MODAL ADAPTADO */
+        .modal-content {
+            width: 95%;
+            margin: 0 auto;
+            bottom: 0;
+            border-radius: 20px 20px 0 0; /* Estilo "Bottom Sheet" */
+            position: absolute;
+            top: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
     }
   </style>
 </head>
@@ -1945,6 +2131,19 @@
                 });
             } else {
                 choicesDiv.innerHTML = '<p style="color: var(--danger);">Error: No hay opciones disponibles para este nodo.</p>';
+            }
+        }
+        
+        // --- MODIFICACIÓN RESPONSIVA: Auto-scroll en móviles ---
+        // Si la pantalla es pequeña, deslizar suavemente hacia el inicio del área de juego
+        // para que el usuario no tenga que hacer scroll manual para ver las nuevas opciones.
+        if (window.innerWidth < 768) {
+            const gameContainer = document.getElementById('view-play');
+            if(gameContainer && gameContainer.style.display !== 'none') {
+                // Pequeño timeout para asegurar que el DOM se renderizó
+                setTimeout(() => {
+                    gameContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
             }
         }
     }
