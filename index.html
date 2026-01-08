@@ -1618,37 +1618,37 @@
       c_cctv_obj_zoom: {
         from: 'n_cctv_obj_start',
         to: 'n_cctv_obj_analysis',
-        effects: { procedural: 10, comms: 5, security: 5 },
+        effects: {},
         desc: 'Realizar zoom digital y "replay" para verificar quién dejó el objeto y cuándo.'
       },
       c_cctv_obj_ignore: {
         from: 'n_cctv_obj_start',
         to: 'n_end_fail_cctv_obj',
-        effects: { security: -20, procedural: -15 },
+        effects: { },
         desc: 'Asumir que es basura y esperar a que personal de aseo la retire.'
       },
       c_cctv_obj_alarm: {
         from: 'n_cctv_obj_start',
         to: 'n_end_fail_cctv_obj',
-        effects: { empathy: -10, comms: -5, procedural: -5 },
+        effects: { },
         desc: 'Activar alarma general de evacuación inmediata sin verificar (Riesgo de pánico innecesario).'
       },
       c_cctv_obj_cordon: {
         from: 'n_cctv_obj_analysis',
         to: 'n_end_ok_cctv_obj',
-        effects: { security: 15, comms: 10 },
+        effects: { },
         desc: 'Comunicar a guardias de piso para acordonar perímetro de seguridad y llamar a Carabineros.'
       },
       c_cctv_obj_guard: {
         from: 'n_cctv_obj_analysis',
         to: 'n_end_fail_cctv_obj',
-        effects: { security: -15 },
+        effects: { },
         desc: 'Enviar un guardia a revisar manualmente el contenido de la mochila.'
       },
       c_cctv_obj_open: {
         from: 'n_cctv_obj_analysis',
         to: 'n_end_fail_cctv_obj',
-        effects: { security: -20 },
+        effects: {  },
         desc: 'Bajar usted mismo a abrir la mochila.'
       },
 
@@ -1656,31 +1656,31 @@
       c_cctv_acc_log: {
         from: 'n_cctv_acc_start',
         to: 'n_cctv_acc_intercept',
-        effects: { procedural: 10, security: 5, comms: 5 },
+        effects: { },
         desc: 'Registrar el evento visualmente, notificar por radio a seguridad de piso con descripción del sujeto.'
       },
       c_cctv_acc_speaker: {
         from: 'n_cctv_acc_start',
         to: 'n_cctv_acc_intercept',
-        effects: { comms: 5, procedural: -5, empathy: -5 },
+        effects: { },
         desc: 'Usar altavoz para gritar al sujeto que se detenga (Poco profesional, pero alerta).'
       },
       c_cctv_acc_ignore: {
         from: 'n_cctv_acc_start',
         to: 'n_end_fail_cctv_acc',
-        effects: { security: -20, procedural: -20 },
+        effects: {},
         desc: 'Ignorar el hecho, asumiendo que es un empleado conocido.'
       },
       c_cctv_acc_verify: {
         from: 'n_cctv_acc_intercept',
         to: 'n_end_ok_cctv_acc',
-        effects: { procedural: 10, empathy: 5, security: 10 },
+        effects: {  },
         desc: 'Solicitar credencial e identidad amablemente, retener y derivar a RRHH/Seguridad.'
       },
       c_cctv_acc_force: {
         from: 'n_cctv_acc_intercept',
         to: 'n_end_fail_cctv_acc',
-        effects: { empathy: -15, security: -5 },
+        effects: { },
         desc: 'Reducir al sujeto contra el suelo inmediatamente como si fuera un intruso armado.'
       },
 
@@ -1689,289 +1689,193 @@
       c_intervencion_verbal: {
         from: 'n_start',
         to: 'n_verbal',
-        effects: {
-          procedural: 10,
-          empathy: 10,
-          time: 5
-        },
+        effects: { },
         desc: 'Intervenir verbalmente para calmar y separar (priorizar desescalada)'
       },
       c_llamar_refuerzos: {
         from: 'n_start',
         to: 'n_verbal',
-        effects: {
-          comms: 10,
-          procedural: 5,
-          time: 10
-        },
+        effects: {},
         desc: 'Llamar de inmediato a refuerzos de control de multitudes y pedir que se acerquen'
       },
       c_uso_fuerza: {
         from: 'n_start',
         to: 'n_end_fail',
-        effects: {
-          security: -10,
-          empathy: -15,
-          time: -5
-        },
+        effects: {},
         desc: 'Usar la fuerza física para separarlos de inmediato (sin intentar desescalada)'
       },
       c_separar: {
         from: 'n_verbal',
         to: 'n_end_fail',
-        effects: {
-          security: -5,
-          procedural: -5
-        },
+        effects: {},
         desc: 'Intentar separar a la fuerza con un solo agente (alto riesgo de lesión)'
       },
       c_aislar: {
         from: 'n_verbal',
         to: 'n_end_ok',
-        effects: {
-          security: 10,
-          empathy: 5
-        },
+        effects: {},
         desc: 'Usar comunicación para que las partes en conflicto se retiren a un área segura para mediar.'
       },
       // OPCIONES PARA INDUSTRIAL/LOGÍSTICO
       c_activar_alarma_panico: {
         from: 'n_start_robo',
         to: 'n_end_ok_robo',
-        effects: {
-          comms: 15,
-          security: 10
-        },
+        effects: {},
         desc: 'Activar alarma silenciosa/pánico para alertar a central y policía'
       },
       c_comunicar_central: {
         from: 'n_start_robo',
         to: 'n_evaluar_riesgo',
-        effects: {
-          comms: 10,
-          procedural: 5
-        },
+        effects: {},
         desc: 'Informar a la central de monitoreo con detalles de la situación y esperar instrucciones'
       },
       c_confrontar_directo: {
         from: 'n_start_robo',
         to: 'n_end_fail_robo',
-        effects: {
-          security: -20,
-          time: -10
-        },
+        effects: { },
         desc: 'Intentar la confrontación directa e inmediata para detener el robo'
       },
       c_distraccion: {
         from: 'n_evaluar_riesgo',
         to: 'n_end_fail_robo',
-        effects: {
-          security: -15,
-          time: -5
-        },
+        effects: {},
         desc: 'Intentar una distracción (ej. encender luces) para que se retiren, pero arriesgando su posición.'
       },
       c_mantener_posicion: {
         from: 'n_evaluar_riesgo',
         to: 'n_end_ok_robo',
-        effects: {
-          security: 10,
-          procedural: 10
-        },
+        effects: { },
         desc: 'Mantener el ocultamiento, seguir informando la situación y esperar el apoyo policial.'
       },
       // OPCIONES PARA COMERCIAL/RETAIL (Hurto)
       c_retener_fisico: {
         from: 'n_start_hurto',
         to: 'n_contencion',
-        effects: {
-          security: 5,
-          time: 5
-        },
+        effects: {},
         desc: 'Utilizar una retención física controlada para impedir la huida.'
       },
       c_activar_alarma_interna: {
         from: 'n_start_hurto',
         to: 'n_end_ok_hurto',
-        effects: {
-          comms: 10
-        },
+        effects: { },
         desc: 'Priorizar activar alarma para que otro personal (o policía) intercepte la salida.'
       },
       c_perseguir_exterior: {
         from: 'n_start_hurto',
         to: 'n_end_fail_hurto',
-        effects: {
-          security: -10
-        },
+        effects: {},
         desc: 'Perseguir al sujeto fuera de la tienda (alto riesgo de abandono de puesto y confrontación en vía pública).'
       },
       c_control_articular: {
         from: 'n_contencion',
         to: 'n_end_ok_hurto',
-        effects: {
-          security: 15,
-          procedural: 10
-        },
+        effects: {},
         desc: 'Aplicar técnica de control articular para inmovilizar con fuerza mínima.'
       },
       c_uso_bastón: {
         from: 'n_contencion',
         to: 'n_end_fail_hurto',
-        effects: {
-          security: -15,
-          empathy: -15
-        },
+        effects: { },
         desc: 'Usar el bastón de servicio para forzar la detención (alto riesgo de escalamiento y lesión).'
       },
       // OPCIONES PARA CRISIS PSIQUIÁTRICA (Paso 1)
       c_desescalada_verbal: {
         from: 'n_start_psiquiatrica',
         to: 'n_aislamiento_exitoso', // Cambio a nodo de continuidad
-        effects: {
-          empathy: 10,
-          procedural: 5,
-          security: 5,
-          time: 5
-        },
+        effects: {},
         desc: 'Iniciar diálogo de desescalada verbal con tono calmado y respetuoso, manteniendo la distancia de seguridad.'
       },
       c_contencion_fisica_rapida: {
         from: 'n_start_psiquiatrica',
         to: 'n_end_fail_psiquiatrica',
-        effects: {
-          security: -10,
-          empathy: -20,
-          time: -5
-        },
+        effects: {},
         desc: 'Intentar la contención física inmediata sin apoyo (alto riesgo de agravar la crisis y lesiones).'
       },
       c_aislamiento_zona: {
         from: 'n_start_psiquiatrica',
         to: 'n_aislamiento_exitoso', // Cambio a nodo de continuidad
-        effects: {
-          security: 10,
-          comms: 5,
-          procedural: 5
-        },
+        effects: {},
         desc: 'Establecer un perímetro de seguridad, alejar a clientes y contener el área (Acción de Seguridad).'
       },
       c_llamar_policia_medica: {
         from: 'n_start_psiquiatrica',
         to: 'n_aislamiento_exitoso', // Cambio a nodo de continuidad
-        effects: {
-          comms: 15,
-          procedural: 10
-        },
+        effects: {},
         desc: 'Llamar a servicios de emergencia (SAMU/Policía) e indicar que se trata de una crisis de salud mental.'
       },
       // OPCIONES PARA NODO 2 (n_aislamiento_exitoso) - Desescalada activa
       c_mantener_distancia_dialogo: {
         from: 'n_aislamiento_exitoso',
         to: 'n_desescalada_avanzada',
-        effects: {
-          security: 5,
-          empathy: 10,
-          procedural: 5
-        },
+        effects: {},
         desc: 'Mantener la distancia de seguridad (2 brazos de largo) y continuar el diálogo de desescalada, confirmando que la ayuda está cerca.'
       },
       c_ofrecer_agua_lugar_seguro: {
         from: 'n_aislamiento_exitoso',
         to: 'n_desescalada_avanzada',
-        effects: {
-          empathy: 15,
-          time: 5
-        },
+        effects: {},
         desc: 'Ofrecer una necesidad básica (agua) y sugerir moverse a un área de mayor calma y privacidad.'
       },
       c_acercarse_ayudar_fisico: { // Mal camino
         from: 'n_aislamiento_exitoso',
         to: 'n_end_fail_psiquiatrica',
-        effects: {
-          security: -15,
-          empathy: -10
-        },
+        effects: {},
         desc: 'Acercarse en solitario para intentar calmarlo con contacto físico o invadir su espacio personal.'
       },
       c_amenaza_uso_fuerza: { // Mal camino
         from: 'n_aislamiento_exitoso',
         to: 'n_end_fail_psiquiatrica',
-        effects: {
-          empathy: -20,
-          procedural: -10
-        },
+        effects: {},
         desc: 'Utilizar un tono de voz fuerte o amenazar con el uso de la fuerza/bastón si no se calma.'
       },
       // OPCIONES PARA NODO 3 (n_desescalada_avanzada) - Cierre de caso
       c_coordinar_emergencia: {
         from: 'n_desescalada_avanzada',
         to: 'n_end_ok_psiquiatrica',
-        effects: {
-          procedural: 10,
-          comms: 10,
-          security: 5
-        },
+        effects: {},
         desc: 'Establecer comunicación con SAMU/Policía para entregar la situación de forma coordinada, detallando el estado de la persona y el entorno.'
       },
       c_solicitar_identificacion: { // Mal camino
         from: 'n_desescalada_avanzada',
         to: 'n_end_fail_psiquiatrica',
-        effects: {
-          empathy: -10,
-          procedural: -5
-        },
+        effects: {},
         desc: 'Exigir inmediatamente la identificación de la persona antes de que intervengan los servicios de emergencia.'
       },
       c_relajar_perimetro: { // Mal camino
         from: 'n_desescalada_avanzada',
         to: 'n_end_fail_psiquiatrica',
-        effects: {
-          security: -10
-        },
+        effects: {},
         desc: 'Relajar completamente el perímetro de seguridad y dejar que la persona deambule libremente mientras espera a la policía.'
       },
       // OPCIONES PARA CORPORATIVO/OFICINAS
       c_desescalada_empatica: {
         from: 'n_start_acceso',
         to: 'n_dialogo',
-        effects: {
-          empathy: 10,
-          procedural: 5
-        },
+        effects: {},
         desc: 'Intentar desescalada verbal, reconociendo su frustración y buscando un espacio seguro para hablar.'
       },
       c_solicitar_policia: {
         from: 'n_start_acceso',
         to: 'n_dialogo',
-        effects: {
-          comms: 15,
-          security: 5
-        },
+        effects: { },
         desc: 'Solicitar apoyo policial de inmediato e informar a la gerencia.'
       },
       c_bloqueo_fisico: {
         from: 'n_start_acceso',
         to: 'n_end_fail_acceso',
-        effects: {
-          security: -10
-        },
+        effects: {},
         desc: 'Bloquear físicamente la puerta de acceso sin intentar diálogo, escalando la tensión.'
       },
       c_barrera_fisica: {
         from: 'n_dialogo',
         to: 'n_end_ok_acceso',
-        effects: {
-          security: 15
-        },
+        effects: {},
         desc: 'Crear una barrera física (ej. mostrador) para interponerse y ganar tiempo hasta la llegada de policía.'
       },
       c_replegarse: {
         from: 'n_dialogo',
         to: 'n_end_fail_acceso',
-        effects: {
-          security: -15
-        },
+        effects: {},
         desc: 'Retirarse de la zona de acceso para evitar la confrontación (permite la entrada al sujeto).'
       }
     };
